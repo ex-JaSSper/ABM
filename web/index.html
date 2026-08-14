@@ -284,6 +284,14 @@ tbody tr.hoverable:hover{background:var(--well)}
 .toast{border-radius:11px;background:var(--ink)}
 .warn-banner,.info-banner{border-radius:11px}
 .sync-ind{border-radius:999px}
+.sig-click{cursor:pointer;transition:box-shadow .16s,transform .12s,border-color .16s}
+.sig-click:hover{box-shadow:0 14px 32px -20px rgba(30,40,70,.45);transform:translateY(-2px);border-color:var(--line-2)}
+.sig-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.copybtn{border:1px solid var(--line-2);background:#fff;color:var(--ink-3);border-radius:7px;cursor:pointer;width:24px;height:24px;font-size:.8rem;line-height:1;transition:all .15s}
+.copybtn:hover{border-color:var(--blueprint);color:var(--blueprint);background:var(--blueprint-wash)}
+.xltable{font-size:.8rem;white-space:nowrap}
+.xltable td,.xltable th{border-right:1px solid var(--line)}
+.xltable td:last-child,.xltable th:last-child{border-right:none}
 </style>
 </head>
 <body class="drafting">
@@ -577,6 +585,7 @@ const App={
     const c=s.companies.find(x=>x.id===cid); if(c){c.funnel_stage='in_work';c.last_activity_at=App.nowIso();}
   });},
   rejectSignal(cid){this.set(s=>{const c=s.companies.find(x=>x.id===cid);if(c)c.funnel_stage='rejected';});},
+  deleteAllSignals(){const ids=this.state.companies.filter(c=>c.funnel_stage==='new_signal').map(c=>c.id);if(!ids.length)return;if(!confirm('Удалить все сигналы ('+ids.length+')? Эти компании и их контакты будут удалены безвозвратно.'))return;const set=new Set(ids);this.set(s=>{s.companies=s.companies.filter(c=>!set.has(c.id));s.contacts=s.contacts.filter(k=>!set.has(k.company_id));s.tasks=s.tasks.filter(t=>!set.has(t.company_id));});},
   excludeCompany(cid,reason){this.set(s=>{
     const c=s.companies.find(x=>x.id===cid); if(c){c.funnel_stage='excluded';c.is_excluded=true;c.excluded_reason=reason||'Без причины';}
     s.tasks.forEach(t=>{if(t.company_id===cid&&(t.status==='planned'||t.status==='waiting'))t.status='cancelled';});
@@ -624,6 +633,14 @@ const App={
   closeModal(){this.modal=null;this._onDismiss=null;renderModal();}
 };
 function toast(msg){const el=document.getElementById('toast-root');el.innerHTML=`<div class="toast">${esc(msg)}</div>`;setTimeout(()=>{el.innerHTML='';},3600);}
+// ---- копирование в буфер (для вставки в Google-таблицу; TSV) ----
+function copyText(t){
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(()=>toast('Скопировано')).catch(()=>fallbackCopy(t));}
+  else fallbackCopy(t);
+}
+function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('Скопировано');}catch(e){toast('Не удалось скопировать');}}
+function copyData(el){copyText(el.getAttribute('data-copy'));}
+const fmtDshort=iso=>iso?new Date(iso).toLocaleDateString('ru-RU'):'';
 
 /* ============================ ОБЛАКО (Supabase) ============================ */
 const SB_URL='https://ngshfaottebswbllwpka.supabase.co';
@@ -920,16 +937,20 @@ function pageDashboard(){
     ${tile('Открытых задач',fmtN(openN),'следующие шаги','c-teal',"App.go('#/tasks')")}
     ${tile('Без следующего шага',fmtN(stalled),'зависли / просрочка',stalled?'c-signal':'c-ink3',"taskFilters.status='stalled';App.go('#/tasks')")}
   </div>`;
+  const kpiHead='KPI\tЕд.\tПлан\tФакт\tВыполнение %\tΔQ\tПрошлый Q';
+  const kpiAll=esc([kpiHead].concat(k.map(r=>[r.label,r.unit,r.plan,r.fact,r.completion,r.delta,r.prevQ].join('\t'))).join('\n'));
   const kpiTable=`<div class="panel span2">
-    <div class="panel-head"><h2 class="panel-title">KPI · план / факт (${esc(CS(s).quarter||'')})</h2><span class="eyebrow">${esc(CS(s).name)}</span></div>
+    <div class="panel-head"><h2 class="panel-title">KPI · план / факт (${esc(CS(s).quarter||'')})</h2><div class="rowflex"><span class="eyebrow">${esc(CS(s).name)}</span><button class="btn btn-ghost btn-xs" data-copy="${kpiAll}" onclick="copyData(this)" title="Скопировать всю таблицу (TSV)">⧉ Таблица</button></div></div>
     <div style="overflow-x:auto"><table>
-      <thead><tr><th class="tl">KPI</th><th>Ед.</th><th class="tr">План</th><th class="tr">Факт</th><th class="tr">Вып.</th><th class="tr">ΔQ</th><th class="tr" style="padding-right:1.15rem">Прошлый Q</th></tr></thead>
+      <thead><tr><th class="tl">KPI</th><th>Ед.</th><th class="tr">План</th><th class="tr">Факт</th><th class="tr">Вып.</th><th class="tr">ΔQ</th><th class="tr">Прошлый Q</th><th style="padding-right:1.15rem"></th></tr></thead>
       <tbody>${k.map(r=>{const money=r.unit==='руб.';const f2=n=>money?fmtM(n):fmtN(n);const pc=r.completion>=100?'pct-hi':r.completion>=50?'pct-mid':'pct-lo';
+        const rowTsv=esc([r.label,r.unit,r.plan,r.fact,r.completion,r.delta,r.prevQ].join('\t'));
         return `<tr class="hoverable"><td class="tl" style="font-weight:500">${esc(r.label)}</td><td class="faint">${esc(r.unit)}</td>
           <td class="tr readout">${f2(r.plan)}</td><td class="tr readout" style="font-weight:600">${f2(r.fact)}</td>
           <td class="tr"><span class="pct ${pc}">${r.completion}%</span></td>
           <td class="tr readout ${r.delta>=0?'c-moss':'c-signal'}">${r.delta>=0?'+':''}${f2(r.delta)}</td>
-          <td class="tr readout faint" style="padding-right:1.15rem">${f2(r.prevQ)}</td></tr>`;}).join('')}</tbody>
+          <td class="tr readout faint">${f2(r.prevQ)}</td>
+          <td class="tr" style="padding-right:1.15rem"><button class="copybtn" data-copy="${rowTsv}" onclick="copyData(this)" title="Скопировать строку (цифры) для Google-таблицы">⧉</button></td></tr>`;}).join('')}</tbody>
     </table></div></div>`;
   const metricsPanel=`<div class="panel"><div class="panel-head"><h2 class="panel-title">Метрики (с повторами)</h2></div>
     <div class="metrics">${mCell('Новые касания',m.new_touches)}${mCell('Повторные касания',m.repeat_touches)}${mCell('Новые встречи',m.new_meetings)}${mCell('Повторные встречи',m.repeat_meetings)}${mCell('Договорённости',m.agreements)}${mCell('Выручка',m.revenue,true)}</div></div>`;
@@ -1002,16 +1023,25 @@ function pageStrategy(){
 }
 
 /* --- Сигналы --- */
+let signalCols=2;
 function pageSignals(){
   const s=App.state, sig=s.companies.filter(c=>c.funnel_stage==='new_signal');
+  const compact=signalCols===3, g=compact?'g3':'g2';
   const fld=(l,v)=>v?`<div class="field-row"><dt>${l}</dt><dd>${esc(v)}</dd></div>`:'';
+  const card=c=>`<div class="panel sigcard sig-click" onclick="ui.signal('${c.id}')">
+        <div class="spread" style="margin-bottom:.5rem"><div class="rowflex">${prio(c.priority)}<span style="font-weight:600">${esc(c.name)}</span></div><span class="faint" style="font-size:.72rem;text-align:right">${esc(c.segment)}${c.geography?' · '+esc(c.geography):''}</span></div>
+        ${compact
+          ? `<div class="faint sig-clamp" style="font-size:.8rem;margin-bottom:.9rem">${esc(c.signal_note||c.why_fit||'—')}</div>`
+          : `<dl style="margin:0 0 1rem">${fld('Почему подходит',c.why_fit)}${fld('Сигнал / наблюдение',c.signal_note)}${fld('Кого искать',c.who_to_find)}</dl>`}
+        <div class="rowflex" style="margin-top:auto" onclick="event.stopPropagation()"><button class="btn btn-primary" style="flex:1;justify-content:center" onclick="App.takeToWork('${c.id}')">В работу →</button><button class="btn btn-ghost" onclick="App.rejectSignal('${c.id}')">Не подходит</button></div>
+      </div>`;
   return `<div class="stack">
-    <div class="page-head"><div><div class="eyebrow">Первичный отвес</div><h1>Сигналы</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Очередь новых компаний · ${sig.length} ждут решения</p></div></div>
-    ${sig.length?`<div class="grid g2">${sig.map(c=>`<div class="panel sigcard">
-        <div class="spread" style="margin-bottom:.5rem"><div class="rowflex">${prio(c.priority)}<a href="#/companies/${c.id}" class="link" style="font-weight:600">${esc(c.name)}</a></div><span class="faint" style="font-size:.75rem">${esc(c.segment)} · ${esc(c.geography)}</span></div>
-        <dl style="margin:0 0 1rem">${fld('Почему подходит',c.why_fit)}${fld('Сигнал / наблюдение',c.signal_note)}${fld('Кого искать',c.who_to_find)}</dl>
-        <div class="rowflex" style="margin-top:auto"><button class="btn btn-primary" style="flex:1;justify-content:center" onclick="App.takeToWork('${c.id}')">В работу →</button><button class="btn btn-ghost" onclick="App.rejectSignal('${c.id}')">Не подходит</button></div>
-      </div>`).join('')}</div>`:`<div class="panel"><div style="padding:2.5rem;text-align:center" class="faint">Очередь пуста — все сигналы разобраны</div></div>`}
+    <div class="page-head"><div><div class="eyebrow">Первичный отвес</div><h1>Сигналы</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Очередь новых компаний · ${sig.length} ждут решения · клик по карточке — детали</p></div>
+      <div class="rowflex">
+        <div class="seg seg-mini"><button class="${signalCols===2?'on':''}" onclick="signalCols=2;renderBody()">2 кол.</button><button class="${signalCols===3?'on':''}" onclick="signalCols=3;renderBody()">3 кол.</button></div>
+        ${sig.length?`<button class="btn btn-ghost btn-sm" style="color:var(--signal)" onclick="App.deleteAllSignals()">Удалить все сигналы</button>`:''}
+      </div></div>
+    ${sig.length?`<div class="grid ${g}">${sig.map(card).join('')}</div>`:`<div class="panel"><div style="padding:2.5rem;text-align:center" class="faint">Очередь пуста — все сигналы разобраны</div></div>`}
   </div>`;
 }
 
@@ -1121,6 +1151,7 @@ function pageContacts(){
 
 /* --- Задачи --- */
 const taskFilters={status:'open',type:'all',company:'all',hyp:'all'};
+let taskView='list';
 function pageTasks(){
   const s=App.state, now=NOW.getTime();
   if(taskFilters.status==='stalled'){
@@ -1143,15 +1174,13 @@ function pageTasks(){
     if(taskFilters.hyp!=='all'&&t.hypothesis_id!==taskFilters.hyp)return false;
     return true;}).sort((a,b)=>{const ao=(a.status==='planned'||a.status==='waiting')?0:1,bo=(b.status==='planned'||b.status==='waiting')?0:1;return ao!==bo?ao-bo:new Date(b.created_at)-new Date(a.created_at);});
   const opt=(v,l,cur)=>`<option value="${v}" ${cur===v?'selected':''}>${l}</option>`;
-  return `<div class="stack">
-    <div class="page-head"><div><div class="eyebrow">Трекер</div><h1>Задачи</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Каждая задача = компания + ЛПР + гипотеза → автотрекинг</p></div></div>
-    <div class="rowflex">
+  const filters=`<div class="rowflex">
       <select class="field auto" onchange="taskFilters.status=this.value;renderBody()">${opt('open','Открытые',taskFilters.status)}${opt('stalled','Без шага / просрочка',taskFilters.status)}${opt('all','Все статусы',taskFilters.status)}${opt('planned','Запланированные',taskFilters.status)}${opt('waiting','Ждут ответа',taskFilters.status)}${opt('done','Завершённые',taskFilters.status)}${opt('cancelled','Отменённые',taskFilters.status)}</select>
       <select class="field auto" onchange="taskFilters.type=this.value;renderBody()"><option value="all">Все типы</option>${Object.keys(TASK_TYPE_META).map(t=>`<option value="${t}" ${taskFilters.type===t?'selected':''}>${TASK_TYPE_META[t].label}</option>`).join('')}</select>
       <select class="field auto" onchange="taskFilters.hyp=this.value;renderBody()"><option value="all">Все гипотезы</option>${CS(s).hypotheses.map(h=>`<option value="${h.id}" ${taskFilters.hyp===h.id?'selected':''}>${esc(h.code)} · ${esc(h.title)}</option>`).join('')}</select>
       <select class="field auto" onchange="taskFilters.company=this.value;renderBody()"><option value="all">Все компании</option>${s.companies.map(c=>`<option value="${c.id}" ${taskFilters.company===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
-    </div>
-    <div class="panel"><div style="overflow-x:auto"><table>
+    </div>`;
+  const listTable=`<div class="panel"><div style="overflow-x:auto"><table>
       <thead><tr><th class="tl">Задача</th><th>Тип</th><th>Компания</th><th>ЛПР</th><th>Гип.</th><th>Статус</th><th>Дедлайн</th><th style="padding-right:1.15rem"></th></tr></thead>
       <tbody>${rows.map(t=>{const overdue=t.due_at&&(t.status==='planned'||t.status==='waiting')&&new Date(t.due_at).getTime()<now;const kn=t.contact_id?contactName(s,t.contact_id):null;const h=t.hypothesis_id?hypById(s,t.hypothesis_id):null;
         return `<tr class="hoverable"><td class="tl"><span style="font-weight:500">${esc(t.title)}</span>${t.is_next_step?'<span class="eyebrow c-brass" style="margin-left:.4rem">шаг</span>':''}</td>
@@ -1159,7 +1188,25 @@ function pageTasks(){
           <td class="muted">${kn?esc(kn):'—'}</td><td>${h?`<span class="chip chip-teal">${esc(h.code)}</span>`:'<span class="faint">—</span>'}</td><td>${statusChip(t.status)}</td>
           <td class="readout ${overdue?'c-signal':'muted'}" style="font-size:.78rem${overdue?';font-weight:600':''}">${overdue?'⚠ ':''}${fmtD(t.due_at)}</td>
           <td class="tr" style="padding-right:1.15rem">${(t.status==='planned'||t.status==='waiting')?`<button class="btn btn-primary btn-sm" onclick="ui.complete('${t.id}')">Завершить</button>`:''}</td></tr>`;}).join('')}</tbody>
-    </table>${rows.length?'':'<div style="padding:2rem;text-align:center" class="faint">Нет задач по фильтру</div>'}</div></div>
+    </table>${rows.length?'':'<div style="padding:2rem;text-align:center" class="faint">Нет задач по фильтру</div>'}</div></div>`;
+  const xlCols=['Компания','Контакт','Должность','Тип','Дата','Канал','Статус','Следующий шаг','Дедлайн','Гипотеза','Комментарий'];
+  const xlRow=t=>{const k=s.contacts.find(x=>x.id===t.contact_id);const h=t.hypothesis_id?hypById(s,t.hypothesis_id):null;const openT=openTaskFor(s,t.company_id);
+    return [companyName(s,t.company_id),k?k.full_name:'',k?(k.position||k.role_target||''):'',TASK_TYPE_META[t.type].label,
+      fmtDshort(t.completed_at||t.created_at),k?(k.telegram||k.email||k.phone||k.source||''):'',STATUS_LABEL[t.status],
+      openT?openT.title:'',fmtDshort(t.due_at),h?(h.code+' '+h.title):'',(t.result_note||'').replace(/[\t\n]/g,' ')];};
+  const xlAll=esc([xlCols.join('\t')].concat(rows.map(t=>xlRow(t).join('\t'))).join('\n'));
+  const xlTable=`<div class="panel">
+      <div class="panel-head"><h2 class="panel-title">Табличный формат — для выгрузки в Google-таблицу</h2><button class="btn btn-ghost btn-xs" data-copy="${xlAll}" onclick="copyData(this)" title="Скопировать всю таблицу (TSV)">⧉ Скопировать всё</button></div>
+      <div style="overflow-x:auto"><table class="xltable">
+        <thead><tr><th class="tl">${xlCols.join('</th><th>')}</th><th style="padding-right:1.15rem"></th></tr></thead>
+        <tbody>${rows.map(t=>{const cells=xlRow(t);const tsv=esc(cells.join('\t'));
+          return `<tr class="hoverable"><td class="tl" style="font-weight:500">${esc(cells[0])}</td>${cells.slice(1).map(c=>`<td class="muted">${esc(c||'—')}</td>`).join('')}<td class="tr" style="padding-right:1.15rem"><button class="copybtn" data-copy="${tsv}" onclick="copyData(this)" title="Скопировать строку для Google-таблицы">⧉</button></td></tr>`;}).join('')}</tbody>
+      </table>${rows.length?'':'<div style="padding:2rem;text-align:center" class="faint">Нет задач по фильтру</div>'}</div></div>`;
+  return `<div class="stack">
+    <div class="page-head"><div><div class="eyebrow">Трекер</div><h1>Задачи</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Каждая задача = компания + ЛПР + гипотеза → автотрекинг</p></div>
+      <div class="seg seg-mini"><button class="${taskView==='list'?'on':''}" onclick="taskView='list';renderBody()">Список</button><button class="${taskView==='table'?'on':''}" onclick="taskView='table';renderBody()">Таблица (выгрузка)</button></div></div>
+    ${filters}
+    ${taskView==='table'?xlTable:listTable}
   </div>`;
 }
 
@@ -1220,14 +1267,14 @@ const ui={
   _fillHT(prefix,hypId){document.getElementById(prefix+'-htask').innerHTML=optHypTasks(hypId,'');},
   _readStep(prefix){return {type:document.getElementById(prefix+'-type').value,contactId:document.getElementById(prefix+'-contact').value||null,hypId:document.getElementById(prefix+'-hyp').value||null,hypTaskId:document.getElementById(prefix+'-htask').value||null,title:document.getElementById(prefix+'-title').value,due:(v=>v?new Date(v).toISOString():null)(document.getElementById(prefix+'-due').value)};},
   complete(taskId){const s=App.state,t=s.tasks.find(x=>x.id===taskId); if(!t)return;const hasContact=!!t.contact_id;const kn=hasContact?contactName(s,t.contact_id):null;
-    App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Завершить: ${esc(t.title)}</h3><button class="x" title="Закрыть без шага" onclick="App.dismiss()">✕</button></div>
+    App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Завершить: ${esc(t.title)}</h3><button class="x" title="Закрыть" onclick="App.cancelModal()">✕</button></div>
       <div><div><label class="lbl eyebrow">Результат</label><textarea id="m-note" class="field" rows="2" placeholder="«Хорошо пообщались, запросили КП»…"></textarea></div>
         <div class="seg mrow"><button id="seg-next" class="on next" onclick="ui._mode('next')">Назначить следующий шаг</button><button id="seg-exc" onclick="ui._mode('exclude')">${hasContact?'Исключить ЛПР':'Исключить компанию'}</button></div>
         <div id="m-next" class="mrow">${stepFields('m',t.company_id,t.contact_id)}</div>
         <div id="m-exc" style="display:none" class="mrow"><label class="lbl eyebrow">${hasContact?('Причина исключить ЛПР'+(kn?' · '+esc(kn):'')):'Причина исключить компанию'}</label><input id="m-reason" class="field" placeholder="Не наш профиль / нет бюджета…"></div>
-        <div class="faint" style="font-size:.72rem;margin-top:.8rem">Закроете крестиком без шага — компания останется «без следующего шага» и всплывёт в «Фокусе».</div></div>
-      <div class="end"><button class="btn btn-ghost" onclick="App.cancelModal()">Отмена</button><button id="m-submit" class="btn btn-primary" onclick="ui._submitComplete('${taskId}')">Завершить и назначить шаг</button></div>
-    </div>`, ()=>ui._completeNoStep(taskId));},
+        <div class="faint" style="font-size:.72rem;margin-top:.8rem">Окно закрывается только кнопками. «Завершить без шага» — компания останется «без следующего шага» и всплывёт в «Фокусе».</div></div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.cancelModal()">Отмена</button><button class="btn btn-ghost" onclick="ui._completeNoStep('${taskId}')">Завершить без шага</button><button id="m-submit" class="btn btn-primary" onclick="ui._submitComplete('${taskId}')">Завершить и назначить шаг</button></div>
+    </div>`);},
   _completeNoStep(taskId){const el=document.getElementById('m-note');const note=el?el.value:'';App.completeTask(taskId,note);App.closeModal();},
   _mode(m){document.getElementById('seg-next').classList.toggle('on',m==='next');document.getElementById('seg-exc').classList.toggle('on',m==='exclude');document.getElementById('m-next').style.display=m==='next'?'':'none';document.getElementById('m-exc').style.display=m==='exclude'?'':'none';const b=document.getElementById('m-submit');b.textContent=m==='exclude'?'Завершить и исключить':'Завершить и назначить шаг';b.className='btn '+(m==='exclude'?'btn-signal':'btn-primary');ui._m=m;},
   _submitComplete(taskId){const s=App.state,t=s.tasks.find(x=>x.id===taskId);const note=document.getElementById('m-note').value;App._onDismiss=null;
@@ -1238,6 +1285,16 @@ const ui={
   _submitExcludeContact(kid){App.excludeContact(kid,document.getElementById('ke-reason').value);App.closeModal();},
   revenue(cid){App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Зафиксировать выручку</h3><button class="x" onclick="App.closeModal()">✕</button></div><p class="muted" style="font-size:.85rem;margin:0 0 .75rem">Оплата переводит компанию в стадию «Выручка».</p><input id="r-amount" type="number" class="field" placeholder="Сумма, руб."><div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-moss" onclick="ui._submitRevenue('${cid}')">Зафиксировать</button></div></div>`);},
   _submitRevenue(cid){App.recordRevenue(cid,Number(document.getElementById('r-amount').value)||0);App.closeModal();},
+  signal(id){const s=App.state,c=s.companies.find(x=>x.id===id);if(!c)return;
+    const fld=(l,v)=>v?`<div style="margin-top:.95rem"><div class="eyebrow" style="margin-bottom:.25rem">${l}</div><div style="font-size:.9rem;line-height:1.5">${esc(v)}</div></div>`:'';
+    const contacts=s.contacts.filter(k=>k.company_id===c.id);
+    App.openModal(`<div class="panel modal">
+      <div class="modal-head"><h3 style="display:flex;align-items:center;gap:.5rem">${prio(c.priority)} ${esc(c.name)}</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+      <div class="faint" style="font-size:.8rem;margin-top:-.5rem">${esc(c.segment||'—')}${c.category?' · '+esc(c.category):''}${c.geography?' · '+esc(c.geography):''}</div>
+      ${fld('Почему подходит',c.why_fit)}${fld('Сигнал / наблюдение',c.signal_note)}${fld('Релевантная гипотеза',c.relevant_hypothesis_text)}${fld('Что проверить / предложить',c.what_to_check)}${fld('Кого искать для входа',c.who_to_find)}${fld('Расширенный повод',c.extended_reason)}${fld('Заготовка 1-го сообщения',c.first_message_template)}${fld('Заготовка 2-го сообщения',c.second_message_template)}
+      ${contacts.length?`<div style="margin-top:.95rem"><div class="eyebrow" style="margin-bottom:.35rem">Контакты · ${contacts.length}</div>${contacts.map(k=>`<div style="font-size:.85rem;padding:.1rem 0">• ${esc(k.full_name)} — <span class="faint">${esc(k.position||k.role_target||'')}</span></div>`).join('')}</div>`:''}
+      <div class="end"><a href="#/companies/${c.id}" class="btn btn-ghost" onclick="App.closeModal()">Открыть карточку</a><button class="btn btn-ghost" style="color:var(--signal)" onclick="App.rejectSignal('${c.id}');App.closeModal()">Не подходит</button><button class="btn btn-primary" onclick="App.takeToWork('${c.id}');App.closeModal()">В работу →</button></div>
+    </div>`);},
   addHyp(){App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Новая гипотеза</h3><button class="x" onclick="App.closeModal()">✕</button></div>
       <div><label class="lbl eyebrow">Название (тезис)</label><input id="h-title" class="field" placeholder="«Продукт X понравится сегменту Y»"></div>
       <div class="mrow"><label class="lbl eyebrow">SMART-цель</label><textarea id="h-smart" class="field" rows="3" placeholder="До DD.MM провести N …, конверсия ≥ …"></textarea></div>
@@ -1272,9 +1329,9 @@ function bodyHtml(){
 }
 function renderBody(){document.getElementById('page-body').innerHTML=bodyHtml();}
 function render(){document.getElementById('app').innerHTML=`<div class="app">${sidebar()}<main class="main"><div class="main-inner" id="page-body">${bodyHtml()}</div></main></div>`;}
-function renderModal(){document.getElementById('modal-root').innerHTML=App.modal?`<div class="overlay" onclick="if(event.target===this)App.dismiss()">${App.modal}</div>`:'';}
+function renderModal(){document.getElementById('modal-root').innerHTML=App.modal?`<div class="overlay">${App.modal}</div>`:'';}
 window.addEventListener('hashchange',()=>{App.compTab='dossier';const mn=document.querySelector('.main');if(mn)mn.scrollTop=0;render();});
-window.addEventListener('keydown',e=>{if(e.key==='Escape'&&App.modal)App.dismiss();});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&App.modal)App.cancelModal();});
 document.getElementById('fileStrategy').addEventListener('change',function(){if(this.files[0])handleStrategyFile(this.files[0]);this.value='';});
 document.getElementById('fileExcel').addEventListener('change',function(){if(this.files[0])handleExcelFile(this.files[0]);this.value='';});
 boot();
