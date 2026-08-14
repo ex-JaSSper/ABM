@@ -1174,6 +1174,8 @@ function pageTasks(){
     if(taskFilters.hyp!=='all'&&t.hypothesis_id!==taskFilters.hyp)return false;
     return true;}).sort((a,b)=>{const ao=(a.status==='planned'||a.status==='waiting')?0:1,bo=(b.status==='planned'||b.status==='waiting')?0:1;return ao!==bo?ao-bo:new Date(b.created_at)-new Date(a.created_at);});
   const opt=(v,l,cur)=>`<option value="${v}" ${cur===v?'selected':''}>${l}</option>`;
+  const stalledN=focus(s).filter(x=>x.stalled).length;
+  const emptyBox=`<div style="padding:2.2rem 1.4rem;text-align:center"><div class="faint" style="margin-bottom:.85rem">Нет задач по текущему фильтру${s.tasks.length?' · всего задач в базе: '+s.tasks.length:''}.</div><div class="rowflex" style="justify-content:center">${taskFilters.status!=='all'?`<button class="btn btn-ghost btn-sm" onclick="taskFilters.status='all';renderBody()">Показать все задачи</button>`:''}${stalledN?`<button class="btn btn-signal btn-sm" onclick="taskFilters.status='stalled';renderBody()">Компании без шага (${stalledN}) →</button>`:''}</div></div>`;
   const filters=`<div class="rowflex">
       <select class="field auto" onchange="taskFilters.status=this.value;renderBody()">${opt('open','Открытые',taskFilters.status)}${opt('stalled','Без шага / просрочка',taskFilters.status)}${opt('all','Все статусы',taskFilters.status)}${opt('planned','Запланированные',taskFilters.status)}${opt('waiting','Ждут ответа',taskFilters.status)}${opt('done','Завершённые',taskFilters.status)}${opt('cancelled','Отменённые',taskFilters.status)}</select>
       <select class="field auto" onchange="taskFilters.type=this.value;renderBody()"><option value="all">Все типы</option>${Object.keys(TASK_TYPE_META).map(t=>`<option value="${t}" ${taskFilters.type===t?'selected':''}>${TASK_TYPE_META[t].label}</option>`).join('')}</select>
@@ -1188,7 +1190,7 @@ function pageTasks(){
           <td class="muted">${kn?esc(kn):'—'}</td><td>${h?`<span class="chip chip-teal">${esc(h.code)}</span>`:'<span class="faint">—</span>'}</td><td>${statusChip(t.status)}</td>
           <td class="readout ${overdue?'c-signal':'muted'}" style="font-size:.78rem${overdue?';font-weight:600':''}">${overdue?'⚠ ':''}${fmtD(t.due_at)}</td>
           <td class="tr" style="padding-right:1.15rem">${(t.status==='planned'||t.status==='waiting')?`<button class="btn btn-primary btn-sm" onclick="ui.complete('${t.id}')">Завершить</button>`:''}</td></tr>`;}).join('')}</tbody>
-    </table>${rows.length?'':'<div style="padding:2rem;text-align:center" class="faint">Нет задач по фильтру</div>'}</div></div>`;
+    </table>${rows.length?'':emptyBox}</div></div>`;
   const xlCols=['Компания','Контакт','Должность','Тип','Дата','Канал','Статус','Следующий шаг','Дедлайн','Гипотеза','Комментарий'];
   const xlRow=t=>{const k=s.contacts.find(x=>x.id===t.contact_id);const h=t.hypothesis_id?hypById(s,t.hypothesis_id):null;const openT=openTaskFor(s,t.company_id);
     return [companyName(s,t.company_id),k?k.full_name:'',k?(k.position||k.role_target||''):'',TASK_TYPE_META[t.type].label,
@@ -1201,7 +1203,7 @@ function pageTasks(){
         <thead><tr><th class="tl">${xlCols.join('</th><th>')}</th><th style="padding-right:1.15rem"></th></tr></thead>
         <tbody>${rows.map(t=>{const cells=xlRow(t);const tsv=esc(cells.join('\t'));
           return `<tr class="hoverable"><td class="tl" style="font-weight:500">${esc(cells[0])}</td>${cells.slice(1).map(c=>`<td class="muted">${esc(c||'—')}</td>`).join('')}<td class="tr" style="padding-right:1.15rem"><button class="copybtn" data-copy="${tsv}" onclick="copyData(this)" title="Скопировать строку для Google-таблицы">⧉</button></td></tr>`;}).join('')}</tbody>
-      </table>${rows.length?'':'<div style="padding:2rem;text-align:center" class="faint">Нет задач по фильтру</div>'}</div></div>`;
+      </table>${rows.length?'':emptyBox}</div></div>`;
   return `<div class="stack">
     <div class="page-head"><div><div class="eyebrow">Трекер</div><h1>Задачи</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Каждая задача = компания + ЛПР + гипотеза → автотрекинг</p></div>
       <div class="seg seg-mini"><button class="${taskView==='list'?'on':''}" onclick="taskView='list';renderBody()">Список</button><button class="${taskView==='table'?'on':''}" onclick="taskView='table';renderBody()">Таблица (выгрузка)</button></div></div>
