@@ -1,0 +1,206 @@
+@import 'tailwindcss';
+
+/* =========================================================================
+   Отвес — визуальная система «чертёжный измерительный прибор».
+   Тёплая чертёжная бумага + тёмный корпус blueprint + латунный отвес-сигнал.
+   Тёплое = живая воронка/фокус, холодное (teal) = плоскость гипотез.
+   ========================================================================= */
+
+@theme {
+  --color-paper: #f2efe6;
+  --color-paper-2: #e8e3d6;
+  --color-card: #fbfaf5;
+  --color-well: #efece2;
+
+  --color-ink: #16232c;
+  --color-ink-2: #47555e;
+  --color-ink-3: #7e8891;
+  --color-line: #dcd6c7;
+  --color-line-2: #cbc4b1;
+
+  --color-blueprint: #102b3c;
+  --color-blueprint-2: #1c4661;
+  --color-blueprint-3: #2b5f80;
+
+  --color-brass: #b9822a;
+  --color-brass-2: #dfa640;
+  --color-brass-wash: #f3e7cf;
+
+  --color-signal: #cf4b2c;
+  --color-signal-wash: #f6ddd3;
+
+  --color-teal: #2b6f6e;
+  --color-teal-2: #3f9b98;
+  --color-teal-wash: #d9ebe9;
+
+  --color-moss: #567a34;
+  --color-moss-wash: #e2ecd4;
+
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Чертёжная сетка на рабочем столе */
+.drafting {
+  background-color: var(--color-paper);
+  background-image:
+    linear-gradient(to right, rgba(22, 35, 44, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(22, 35, 44, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-thumb { background: var(--color-line-2); border-radius: 0; border: 3px solid var(--color-paper); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ink-3); }
+
+/* ---- Компоненты-примитивы прибора ---- */
+
+@layer components {
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  .readout {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .display {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+
+  /* Панель прибора: конверт с латунной риской сверху */
+  .panel {
+    position: relative;
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: 4px;
+    box-shadow: 0 1px 0 rgba(22, 35, 44, 0.04), 0 12px 28px -22px rgba(16, 43, 60, 0.5);
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 1.15rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+  }
+
+  /* Кнопки — маленький радиус, инструментальные */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    line-height: 1;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.05s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+
+  .btn-primary { background: var(--color-blueprint); color: var(--color-paper); }
+  .btn-primary:hover { background: var(--color-blueprint-2); }
+
+  .btn-brass { background: var(--color-brass); color: #fff; }
+  .btn-brass:hover { background: var(--color-brass-2); }
+
+  .btn-signal { background: var(--color-signal); color: #fff; }
+  .btn-signal:hover { background: #b93f23; }
+
+  .btn-moss { background: var(--color-moss); color: #fff; }
+  .btn-moss:hover { background: #46662a; }
+
+  .btn-ghost { background: transparent; color: var(--color-ink-2); border-color: var(--color-line-2); }
+  .btn-ghost:hover { background: var(--color-well); color: var(--color-ink); }
+
+  .btn-sm { padding: 0.38rem 0.65rem; font-size: 0.75rem; }
+
+  /* Поля ввода */
+  .field {
+    width: 100%;
+    background: var(--color-card);
+    border: 1px solid var(--color-line-2);
+    border-radius: 3px;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.85rem;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field:focus { border-color: var(--color-brass); box-shadow: 0 0 0 3px var(--color-brass-wash); }
+
+  /* Чип-метка */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 2px;
+    border: 1px solid transparent;
+  }
+
+  /* Маячок зависшей компании (отвес раскачался) */
+  .beacon {
+    position: relative;
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--color-signal);
+  }
+  .beacon::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-signal);
+    animation: beacon-pulse 1.8s ease-out infinite;
+  }
+
+  @keyframes beacon-pulse {
+    0%   { transform: scale(0.7); opacity: 0.9; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beacon::after { animation: none; }
+  * { transition: none !important; }
+}

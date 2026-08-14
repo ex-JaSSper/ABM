@@ -1,0 +1,14 @@
+# Render Blueprint — статический сайт ABM.
+# Рендерит папку web/ как есть (сборка не нужна — это один index.html).
+# Публичный (anon) ключ Supabase уже внутри index.html — коммитить его безопасно.
+services:
+  - type: web
+    name: abm
+    runtime: static
+    staticPublishPath: ./web
+    buildCommand: ""
+    # хеш-роутинг (#/...) не требует серверных rewrite-правил
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache

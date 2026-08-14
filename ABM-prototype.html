@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ABM · движок следующего действия</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --paper:#f2efe6; --paper-2:#e8e3d6; --card:#fbfaf5; --well:#efece2;
+  --ink:#16232c; --ink-2:#47555e; --ink-3:#7e8891; --line:#dcd6c7; --line-2:#cbc4b1;
+  --blueprint:#102b3c; --blueprint-2:#1c4661; --blueprint-3:#2b5f80;
+  --brass:#b9822a; --brass-2:#dfa640; --brass-wash:#f3e7cf;
+  --signal:#cf4b2c; --signal-wash:#f6ddd3;
+  --teal:#2b6f6e; --teal-2:#3f9b98; --teal-wash:#d9ebe9;
+  --moss:#567a34; --moss-wash:#e2ecd4;
+  --f-display:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --f-sans:'IBM Plex Sans',ui-sans-serif,system-ui,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--f-sans);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{margin:0}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-thumb{background:var(--line-2);border:3px solid var(--paper)}
+::-webkit-scrollbar-thumb:hover{background:var(--ink-3)}
+
+.eyebrow{font-family:var(--f-mono);font-size:.6875rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.display{font-family:var(--f-display);letter-spacing:-.015em}
+.muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
+
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:262px;flex-shrink:0;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:.6rem;padding:1.15rem 1.15rem}
+.brand-badge{width:38px;height:38px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--paper);font-family:var(--f-display);font-weight:700;font-size:1.1rem;background:linear-gradient(150deg,var(--blueprint),var(--blueprint-3))}
+.brand b{font-family:var(--f-display);font-size:.9rem;display:block;line-height:1.1}
+.nav{flex:1;padding:.4rem .6rem;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:.7rem;padding:.55rem .7rem;border-radius:4px;font-size:.85rem;font-weight:500;color:var(--ink-2);transition:background .15s,color .15s}
+.nav a:hover{background:var(--well)}
+.nav a.active{background:var(--brass-wash);color:#7a5417}
+.nav a .ico{width:16px;text-align:center;opacity:.9}
+.nav a .grow{flex:1}
+.nav-badge{font-family:var(--f-mono);font-size:.7rem;font-weight:600;background:var(--blueprint);color:var(--paper);border-radius:3px;padding:.05rem .4rem}
+.sidebar-warn{margin:.4rem .7rem;padding:.5rem .65rem;border-radius:4px;background:var(--signal-wash);color:#9d3013;font-size:.75rem;display:flex;align-items:center;gap:.4rem;text-decoration:none}
+.sidebar-warn:hover{background:#f4d0c4}
+.sidebar-foot{border-top:1px solid var(--line);padding:.75rem 1rem}
+.main{flex:1;overflow-y:auto}
+.main-inner{max-width:1200px;margin:0 auto;padding:1.6rem 2rem 3rem}
+
+.drafting{background-color:var(--paper);background-image:linear-gradient(rgba(22,35,44,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(22,35,44,.035) 1px,transparent 1px);background-size:28px 28px}
+
+.page-head{border-bottom:1px solid var(--line);padding-bottom:1.1rem;margin-bottom:1.5rem;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:1rem}
+.page-head h1{font-family:var(--f-display);font-size:1.75rem;font-weight:700;margin-top:.35rem}
+
+.panel{position:relative;background:var(--card);border:1px solid var(--line);border-radius:4px;box-shadow:0 1px 0 rgba(22,35,44,.04),0 12px 28px -22px rgba(16,43,60,.5)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.7rem 1.15rem;border-bottom:1px solid var(--line)}
+.panel-title{font-family:var(--f-display);font-weight:600;font-size:.9rem;letter-spacing:-.01em}
+
+.grid{display:grid;gap:1.1rem}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.span2{grid-column:span 2}
+@media(max-width:1000px){.g4{grid-template-columns:repeat(2,1fr)}.g3,.g2{grid-template-columns:1fr}.span2{grid-column:auto}}
+.stack>*+*{margin-top:1.1rem}
+
+.btn{display:inline-flex;align-items:center;gap:.4rem;border-radius:3px;font-weight:600;font-size:.82rem;font-family:var(--f-sans);line-height:1;padding:.55rem .9rem;border:1px solid transparent;cursor:pointer;transition:background .15s,color .15s,border-color .15s,transform .05s;white-space:nowrap}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--blueprint);color:var(--paper)} .btn-primary:hover{background:var(--blueprint-2)}
+.btn-brass{background:var(--brass);color:#fff} .btn-brass:hover{background:var(--brass-2)}
+.btn-signal{background:var(--signal);color:#fff} .btn-signal:hover{background:#b93f23}
+.btn-moss{background:var(--moss);color:#fff} .btn-moss:hover{background:#46662a}
+.btn-ghost{background:transparent;color:var(--ink-2);border-color:var(--line-2)} .btn-ghost:hover{background:var(--well);color:var(--ink)}
+.btn-sm{padding:.38rem .65rem;font-size:.75rem}
+.btn-xs{padding:.2rem .45rem;font-size:.72rem}
+.btn-block{width:100%;justify-content:center}
+
+.field{width:100%;background:var(--card);border:1px solid var(--line-2);border-radius:3px;padding:.5rem .65rem;font-size:.85rem;font-family:var(--f-sans);color:var(--ink);outline:none;transition:border-color .15s,box-shadow .15s}
+.field:focus{border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-wash)}
+select.field{cursor:pointer}
+.field.auto{width:auto}
+.field.sm{padding:.35rem .5rem;font-size:.78rem}
+label.lbl{display:block;margin-bottom:.35rem}
+
+.chip{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.02em;padding:.15rem .45rem;border-radius:2px;border:1px solid transparent;white-space:nowrap}
+.chip-neutral{background:var(--well);color:var(--ink-2);border-color:var(--line-2)}
+.chip-signal{background:var(--signal-wash);color:var(--signal);border-color:rgba(207,75,44,.3)}
+.chip-blueprint{background:rgba(16,43,60,.08);color:var(--blueprint);border-color:rgba(16,43,60,.2)}
+.chip-brasssoft{background:var(--brass-wash);color:#8a611c;border-color:rgba(185,130,42,.3)}
+.chip-brass{background:var(--brass);color:#fff}
+.chip-moss{background:var(--moss);color:#fff}
+.chip-mosssoft{background:var(--moss-wash);color:#3f5a25;border-color:rgba(86,122,52,.3)}
+.chip-teal{background:var(--teal-wash);color:var(--teal);border-color:rgba(43,111,110,.3)}
+.chip-ink{background:rgba(22,35,44,.08);color:var(--ink-3);border-color:var(--line-2)}
+.prio{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:2px;font-family:var(--f-mono);font-size:.7rem;font-weight:600;flex-shrink:0}
+.prio-A{background:var(--signal);color:#fff} .prio-B{background:var(--brass);color:#fff} .prio-C{background:var(--well);color:var(--ink-2);border:1px solid var(--line-2)}
+
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead th{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:400;text-align:left;padding:.7rem .75rem;border-bottom:1px solid var(--line)}
+tbody td{padding:.7rem .75rem;border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.hoverable:hover{background:rgba(239,236,226,.5)}
+.tl{padding-left:1.15rem!important} .tr{padding-right:1.15rem!important;text-align:right}
+.link:hover{color:var(--brass)}
+
+.tile{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:.9rem 1.05rem;box-shadow:0 1px 0 rgba(22,35,44,.04)}
+.tile .val{font-family:var(--f-mono);font-size:1.6rem;font-weight:600;margin-top:.25rem;line-height:1}
+.tile .hint{font-size:.72rem;color:var(--ink-3);margin-top:.35rem}
+.tile.click{cursor:pointer;transition:box-shadow .15s,transform .05s}
+.tile.click:hover{box-shadow:0 8px 22px -16px rgba(16,43,60,.6)}
+.c-brass{color:var(--brass)} .c-blueprint{color:var(--blueprint)} .c-signal{color:var(--signal)} .c-teal{color:var(--teal)} .c-moss{color:var(--moss)} .c-ink3{color:var(--ink-3)}
+
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+.metrics>div{background:var(--card);padding:.7rem .9rem}
+.metrics .m-val{font-family:var(--f-mono);font-size:1.15rem;font-weight:600}
+.metrics .m-lbl{font-size:.72rem;color:var(--ink-3)}
+
+.pct{font-family:var(--f-mono);font-size:.72rem;font-weight:600;padding:.1rem .35rem;border-radius:2px}
+.pct-hi{background:var(--moss-wash);color:#3f5a25}
+.pct-mid{background:var(--brass-wash);color:#8a611c}
+.pct-lo{background:var(--signal-wash);color:var(--signal)}
+
+.funnel{display:flex;flex-direction:column;align-items:center;gap:6px;padding:1.15rem}
+.funnel .rung{height:46px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;padding:0 .8rem;color:#fff;min-width:90px;box-shadow:0 2px 6px -3px rgba(16,43,60,.5)}
+.funnel .rung .rl{font-size:.78rem;font-weight:500}
+.funnel .rung .rv{font-family:var(--f-mono);font-weight:600;font-size:.95rem}
+
+.bar{height:8px;width:100%;background:var(--well);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--teal);border-radius:99px;transition:width .3s}
+
+.focus-body{position:relative;padding-left:1.15rem}
+.focus-rail{position:absolute;left:26px;top:14px;bottom:34px;width:2px;background:linear-gradient(var(--brass-2),var(--brass));border-radius:2px}
+.focus-rail::after{content:'';position:absolute;left:50%;bottom:-16px;transform:translateX(-50%) rotate(45deg);width:12px;height:12px;background:linear-gradient(135deg,var(--brass-2),var(--brass));border-radius:2px;box-shadow:0 3px 6px -2px rgba(16,43,60,.5)}
+.focus-item{position:relative;display:flex;align-items:center;gap:.75rem;padding:.7rem 1.15rem .7rem 2.6rem;border-bottom:1px solid var(--line)}
+.focus-item:last-child{border-bottom:none}
+.focus-node{position:absolute;left:21px;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--brass)}
+.beacon{position:relative;display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--signal)}
+.beacon::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1.5px solid var(--signal);animation:bp 1.8s ease-out infinite}
+@keyframes bp{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.9);opacity:0}}
+
+.sigcard{display:flex;flex-direction:column;padding:1.15rem}
+.field-row{margin-top:.6rem}
+.field-row dt{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.field-row dd{margin:.1rem 0 0;font-size:.85rem;color:var(--ink)}
+
+.dossier{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;padding:1.15rem}
+@media(max-width:700px){.dossier{grid-template-columns:1fr}.metrics{grid-template-columns:1fr}}
+
+.tabs{display:flex;gap:.35rem;border-bottom:1px solid var(--line);padding:0 .4rem;flex-wrap:wrap}
+.tabs button{background:none;border:none;cursor:pointer;font-family:var(--f-sans);font-size:.85rem;font-weight:600;color:var(--ink-3);padding:.7rem .9rem;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--brass)}
+.tabs .cnt{font-family:var(--f-mono);font-size:.7rem;color:var(--ink-3);margin-left:.3rem}
+
+.lpr{display:flex;align-items:center;gap:.9rem;padding:.85rem 1.15rem;border-bottom:1px solid var(--line)}
+.lpr:last-child{border-bottom:none}
+.lpr.excluded{opacity:.55}
+.lpr .av{width:34px;height:34px;border-radius:50%;background:var(--well);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:600;color:var(--ink-2);flex-shrink:0}
+.count{display:inline-flex;align-items:center;gap:.3rem;font-family:var(--f-mono);font-size:.72rem;color:var(--ink-2);background:var(--well);border:1px solid var(--line);border-radius:2px;padding:.1rem .4rem}
+
+.overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:1rem;background:rgba(16,43,60,.45);backdrop-filter:blur(2px)}
+.modal{width:100%;max-width:660px;padding:1.5rem;max-height:92vh;overflow-y:auto}
+.modal-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:.75rem;margin-bottom:1.1rem}
+.modal-head h3{font-family:var(--f-display);font-size:1rem;font-weight:600;padding-right:1rem}
+.x{background:none;border:none;cursor:pointer;color:var(--ink-3);font-size:1rem;flex-shrink:0}
+.seg{display:flex;gap:.35rem;background:var(--well);padding:.25rem;border-radius:4px}
+.seg button{flex:1;border:none;background:none;cursor:pointer;padding:.45rem;border-radius:3px;font-size:.82rem;font-weight:600;color:var(--ink-3)}
+.seg button.on{background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg button.on.next{color:var(--blueprint)} .seg button.on.exc{color:var(--signal)}
+.seg-mini{width:auto;padding:.15rem}
+.seg-mini button{flex:none;padding:.3rem .7rem;font-size:.75rem}
+.seg-mini button.on{color:var(--blueprint)}
+.mrow{margin-top:.7rem}
+
+.hyp-head{display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:start;padding:1.15rem;background:linear-gradient(180deg,rgba(217,235,233,.35),transparent)}
+.smart{font-size:.8rem;color:var(--ink-2);background:var(--well);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:3px;padding:.6rem .75rem;margin-top:.5rem;line-height:1.45}
+.exp{display:inline-flex;width:18px;justify-content:center;color:var(--ink-3);cursor:pointer;user-select:none}
+.subrow td{background:var(--well);padding:.6rem 1.15rem .8rem 2.3rem!important}
+.subwrap{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.subchip{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .5rem;border-radius:2px;font-size:.72rem;cursor:pointer;border:1px solid var(--line-2);background:var(--card);color:var(--ink-2);transition:border-color .15s,background .15s}
+.subchip:hover{border-color:var(--teal)}
+.subchip.done{background:var(--teal);color:#fff;border-color:var(--teal)}
+.subchip .del{opacity:.5;margin-left:.15rem}
+.subchip .del:hover{opacity:1;color:var(--signal)}
+.contrib{font-size:.78rem;color:var(--ink-2);padding:.15rem 0}
+.contrib b{color:var(--moss)}
+.tag-auto{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);background:var(--teal-wash);border-radius:2px;padding:.05rem .3rem}
+.tinyadd{border:1px dashed var(--line-2);background:transparent;color:var(--ink-3);border-radius:2px;padding:.25rem .5rem;font-size:.72rem;cursor:pointer}
+.tinyadd:hover{border-color:var(--teal);color:var(--teal)}
+
+.warn-banner{border:1px solid rgba(207,75,44,.35);background:var(--signal-wash);color:#9d3013;padding:.7rem .9rem;border-radius:4px;font-size:.83rem}
+.info-banner{border:1px solid var(--line);background:var(--well);padding:.7rem .9rem;border-radius:4px;font-size:.82rem;color:var(--ink-2)}
+.rowflex{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:.75rem}
+.end{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1.1rem;border-top:1px solid var(--line);padding-top:1rem}
+.strat-field{margin-top:1.2rem}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:60;background:var(--blueprint);color:var(--paper);padding:.7rem 1.1rem;border-radius:4px;font-size:.85rem;box-shadow:0 8px 24px -8px rgba(0,0,0,.5)}
+@media(prefers-reduced-motion:reduce){.beacon::after{animation:none}*{transition:none!important}}
+</style>
+</head>
+<body class="drafting">
+<div id="app"></div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+<input type="file" id="fileStrategy" accept=".json" style="display:none">
+<input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" style="display:none">
+
+<script>
+"use strict";
+/* ============================ ДАННЫЕ (тест) ============================ */
+const NOW=new Date('2026-08-11T09:00:00');
+const dISO=d=>d.toISOString();
+const daysAgo=n=>dISO(new Date(NOW.getTime()-n*86400000));
+const inDays =n=>dISO(new Date(NOW.getTime()+n*86400000));
+
+function seedState(){
+  const co=p=>Object.assign({category:'Производство',geography:'Москва',why_fit:'',signal_note:'',relevant_hypothesis_text:'',
+    what_to_check:'',who_to_find:'',extended_reason:'',first_message_template:'',second_message_template:'',
+    is_excluded:false,excluded_reason:'',revenue_amount:0,created_at:daysAgo(30),last_activity_at:daysAgo(30)},p);
+  const companies=[
+    co({id:'c1',ext_no:'1',name:'ГК «Свежий колос»',priority:'A',segment:'Хлебопечение',funnel_stage:'met',last_activity_at:daysAgo(3),
+      why_fit:'Крупная сеть пекарен, активно масштабируется в регионы.',signal_note:'Открыли 4 новых точки за квартал, ищут поставщика заквасок.',
+      relevant_hypothesis_text:'Натуральная закваска сократит возвраты на 15%.',what_to_check:'Кто отвечает за закупку сырья, объёмы.',
+      who_to_find:'Директор по производству',extended_reason:'Пост в отраслевом канале про рост возвратов чёрствого хлеба.',
+      first_message_template:'Здравствуйте! Видели ваш рост по точкам…',second_message_template:'Прикладываю кейс по снижению возвратов…'}),
+    co({id:'c2',ext_no:'2',name:'ООО «Молочные реки»',priority:'A',segment:'Молочка',geography:'Тверь',funnel_stage:'touched',last_activity_at:daysAgo(9),
+      why_fit:'Средний завод, обновляют линейку йогуртов.',signal_note:'Вакансия технолога по ферментам — сигнал к смене рецептур.',
+      relevant_hypothesis_text:'Пробиотические культуры зайдут в премиум-линейку.',who_to_find:'Главный технолог',
+      first_message_template:'Здравствуйте! По поводу обновления линейки…'}),
+    co({id:'c3',ext_no:'3',name:'АО «Мясной двор»',priority:'B',segment:'Мясопереработка',geography:'Калуга',funnel_stage:'in_work',last_activity_at:daysAgo(14),
+      why_fit:'Ищут замену импортным оболочкам.',signal_note:'Тендер на упаковочные материалы.',who_to_find:'Снабжение'}),
+    co({id:'c4',ext_no:'4',name:'ООО «Кондитер+»',priority:'A',segment:'Кондитерка',funnel_stage:'agreement',last_activity_at:daysAgo(2),
+      why_fit:'Премиальный сегмент, высокая маржа.',signal_note:'Запускают линию без сахара.',relevant_hypothesis_text:'Натуральные подсластители зайдут в ЗОЖ-линейку.'}),
+    co({id:'c5',ext_no:'5',name:'ГК «АгроВолга»',priority:'B',segment:'Бакалея',geography:'Самара',funnel_stage:'revenue',last_activity_at:daysAgo(20),revenue_amount:480000,
+      why_fit:'Вертикально интегрированный холдинг.',signal_note:'Расширяют ассортимент круп.'}),
+    co({id:'c6',ext_no:'6',name:'ООО «Снек-Мастер»',priority:'C',segment:'Снеки',geography:'Рязань',funnel_stage:'new_signal',
+      why_fit:'Молодой бренд чипсов, растёт в маркетплейсах.',signal_note:'Активный рост продаж на WB.'}),
+    co({id:'c7',ext_no:'7',name:'АО «СольПром»',priority:'C',segment:'Приправы',geography:'Тула',funnel_stage:'new_signal',
+      why_fit:'Ищут дистрибьюторов на юг.',signal_note:'Пост о выходе в новые регионы.'}),
+    co({id:'c8',ext_no:'8',name:'ООО «Пекарь-Люкс»',priority:'B',segment:'Хлебопечение',geography:'Ярославль',funnel_stage:'rejected',
+      why_fit:'Малый объём, не наш профиль.',signal_note:'Отклонён на отвесе — слишком мелкий.'})
+  ];
+  const kt=p=>Object.assign({priority:'A',segment:'',role_target:'ЛПР по закупкам',position:'',phone:'',email:'',telegram:'',
+    source:'LinkedIn',check_date:daysAgo(5),confidence:'высокая',comment:'',how_to_get:'',status:'active',excluded_reason:''},p);
+  const contacts=[
+    // c1 — 3 ЛПР
+    kt({id:'k1',company_id:'c1',ext_company_no:'1',company_name:'ГК «Свежий колос»',contact_no:'1',full_name:'Игорь Соколов',position:'Директор по производству',phone:'+7 916 000-11-22',email:'sokolov@koloshleb.ru',telegram:'@sokolov_prod',comment:'Принимает решения по сырью.'}),
+    kt({id:'k2',company_id:'c1',ext_company_no:'1',company_name:'ГК «Свежий колос»',contact_no:'2',full_name:'Анна Мельник',position:'Главный технолог',email:'melnik@koloshleb.ru',confidence:'средняя',role_target:'Влияет на выбор'}),
+    kt({id:'k1c',company_id:'c1',ext_company_no:'1',company_name:'ГК «Свежий колос»',contact_no:'3',full_name:'Роман Гусев',position:'Руководитель закупок',phone:'+7 916 222-33-44',confidence:'средняя'}),
+    // c2 — 2 ЛПР
+    kt({id:'k3',company_id:'c2',ext_company_no:'2',company_name:'ООО «Молочные реки»',contact_no:'1',full_name:'Дмитрий Ершов',position:'Главный технолог',telegram:'@ershov_milk'}),
+    kt({id:'k3b',company_id:'c2',ext_company_no:'2',company_name:'ООО «Молочные реки»',contact_no:'2',full_name:'Елена Волкова',position:'Директор по закупкам',phone:'+7 903 555-10-20',confidence:'средняя'}),
+    // c3 — 2 ЛПР
+    kt({id:'k4',company_id:'c3',ext_company_no:'3',company_name:'АО «Мясной двор»',contact_no:'1',full_name:'Ольга Панова',position:'Руководитель снабжения',phone:'+7 920 555-33-44',confidence:'средняя'}),
+    kt({id:'k4b',company_id:'c3',ext_company_no:'3',company_name:'АО «Мясной двор»',contact_no:'2',full_name:'Виктор Седов',position:'Генеральный директор',confidence:'низкая',role_target:'ЛПР по бюджету'}),
+    // c4 — 2 ЛПР
+    kt({id:'k5',company_id:'c4',ext_company_no:'4',company_name:'ООО «Кондитер+»',contact_no:'1',full_name:'Сергей Ким',position:'Коммерческий директор',email:'kim@konditerplus.ru'}),
+    kt({id:'k5b',company_id:'c4',ext_company_no:'4',company_name:'ООО «Кондитер+»',contact_no:'2',full_name:'Мария Лаврова',position:'Бренд-менеджер ЗОЖ',confidence:'средняя',role_target:'Влияет на продукт'}),
+    // c5 — 2 ЛПР
+    kt({id:'k6',company_id:'c5',ext_company_no:'5',company_name:'ГК «АгроВолга»',contact_no:'1',full_name:'Наталья Гринь',position:'Директор по закупкам',phone:'+7 927 111-22-33'}),
+    kt({id:'k6b',company_id:'c5',ext_company_no:'5',company_name:'ГК «АгроВолга»',contact_no:'2',full_name:'Артём Лис',position:'Категорийный менеджер',telegram:'@artem_agro',confidence:'средняя'}),
+    // c6 — 1 ЛПР (сигнал ещё не в работе)
+    kt({id:'k8',company_id:'c6',ext_company_no:'6',company_name:'ООО «Снек-Мастер»',contact_no:'1',full_name:'Кирилл Юдин',position:'Основатель',telegram:'@yudin_snack',confidence:'средняя'}),
+    // без матча
+    kt({id:'k7',company_id:null,ext_company_no:'99',company_name:'ООО «Ферма-Юг»',contact_no:'1',full_name:'Павел Дуб',position:'Владелец',confidence:'низкая',how_to_get:'Компания не найдена в базе — проверить № компании.'})
+  ];
+  const T=(id,cid,kid,hid,htid,title,type,status,note,step,due,cr,comp)=>({id,company_id:cid,contact_id:kid,hypothesis_id:hid,hyp_task_id:htid,title,description:'',type,status,result_note:note,is_next_step:step,due_at:due,created_at:cr,completed_at:comp});
+  const tasks=[
+    T('t1','c4',null,'h3',null,'Разобрать сигнал','analyze_signal','done','Идём с натуральными подсластителями.',false,null,daysAgo(18),daysAgo(17)),
+    T('t2','c4','k5','h3','h3t2','Первое сообщение Сергею','touch_new','done','Ответил, интересно.',true,null,daysAgo(16),daysAgo(14)),
+    T('t3','c4','k5','h3','h3t3','Встреча-презентация','meeting_new','done','Хорошо пообщались, запросили КП.',true,null,daysAgo(13),daysAgo(6)),
+    T('t4','c4','k5','h3',null,'Согласовать пилот','agreement','done','Договорились о пилоте на 1 месяц.',true,null,daysAgo(5),daysAgo(2)),
+    T('t5','c4','k5','h3',null,'Согласовать договор пилота','custom','waiting','',true,inDays(4),daysAgo(2),null),
+    T('t6','c1',null,'h1',null,'Разобрать сигнал','analyze_signal','done','Заквасочный продукт под возвраты.',false,null,daysAgo(20),daysAgo(19)),
+    T('t7','c1','k1','h1','h1t3','Первое сообщение Игорю','touch_new','done','Ответил через день.',true,null,daysAgo(18),daysAgo(15)),
+    T('t8','c1','k1','h1','h1t4','Онлайн-встреча','meeting_new','done','Запросили образцы.',true,null,daysAgo(12),daysAgo(3)),
+    T('t7b','c1','k2','h1','h1t3','Первое сообщение технологу','touch_new','done','Заинтересовалась методикой.',true,null,daysAgo(11),daysAgo(8)),
+    T('t9','c1','k2','h1','h1t3','Отправить образцы и написать','touch_repeat','planned','',true,inDays(2),daysAgo(3),null),
+    T('t10','c2',null,'h2',null,'Разобрать сигнал','analyze_signal','done','Пробиотики в премиум.',false,null,daysAgo(15),daysAgo(14)),
+    T('t11','c2','k3','h2','h2t2','Первое сообщение Дмитрию','touch_new','done','Прочитал, не ответил.',true,null,daysAgo(12),daysAgo(9)),
+    T('t12','c2','k3','h2','h2t2','Повторное касание — напоминание','touch_repeat','waiting','',true,daysAgo(2),daysAgo(9),null),
+    T('t13','c3',null,null,null,'Разобрать сигнал','analyze_signal','done','Идём с заменой импортных оболочек.',false,null,daysAgo(14),daysAgo(12)),
+    T('t14','c5',null,'h2',null,'Разобрать сигнал','analyze_signal','done','',false,null,daysAgo(40),daysAgo(38)),
+    T('t15','c5','k6','h2','h2t2','Первое сообщение','touch_new','done','',true,null,daysAgo(37),daysAgo(35)),
+    T('t16','c5','k6','h2',null,'Встреча','meeting_new','done','',true,null,daysAgo(33),daysAgo(30)),
+    T('t17','c5','k6','h2',null,'Договор поставки','agreement','done','Подписали.',true,null,daysAgo(28),daysAgo(22))
+  ];
+  const HT=(id,hid,title,unit,plan,prio,mode,track)=>({id,hypothesis_id:hid,title,unit,plan,priority:prio,mode,track:track||null});
+  const strat1={
+    id:'s1',name:'Выход в пищепром ЦФО',quarter:'2026-Q3',created_at:daysAgo(45),
+    description:'ABM-инициатива по выходу в пищевую промышленность ЦФО: точечная проработка средних и крупных производителей через продуктовые гипотезы и персональные касания ЛПР. Не массовый обзвон, а фокус на «правильных» компаниях и удержание следующего шага по каждой.',
+    expected_effect:'3–5 оплаченных пилотов за квартал, выручка ≥ 2 млн ₽, подтверждённые 2–3 продуктовые гипотезы, готовые к масштабированию.',
+    kpiTargets:[
+      {id:'kt1',kpi_key:'new_touches',unit:'шт.',plan_value:40,prev_q_value:22},
+      {id:'kt2',kpi_key:'new_meetings',unit:'шт.',plan_value:12,prev_q_value:7},
+      {id:'kt3',kpi_key:'repeat_meetings',unit:'шт.',plan_value:8,prev_q_value:5},
+      {id:'kt4',kpi_key:'agreements',unit:'шт.',plan_value:5,prev_q_value:2},
+      {id:'kt5',kpi_key:'revenue',unit:'руб.',plan_value:2000000,prev_q_value:750000}
+    ],
+    hypotheses:[
+      {id:'h1',code:'Н1',title:'Натуральная закваска снижает возвраты хлеба',
+        smart:'До 30.09.2026 провести 3 внедрения заквасок в сети пекарен сегмента A/B с личной презентацией первому лицу и получить ≥2 продолжения (пилот → контракт), конверсия ≥60%.',
+        status:'in_work',priority:'A',unit:'Внедрения',plan:3,created_at:daysAgo(40)},
+      {id:'h2',code:'Н2',title:'Пробиотики зайдут в премиум-молочку',
+        smart:'До 31.10.2026 подтвердить интерес 8 молочных заводов и довести 2 до пилота пробиотической линейки.',
+        status:'in_work',priority:'B',unit:'Пилоты',plan:2,created_at:daysAgo(35)},
+      {id:'h3',code:'Н3',title:'Натуральные подсластители для ЗОЖ-кондитерки',
+        smart:'До 31.08.2026 получить 1 оплаченный пилот в сегменте кондитеров без сахара из тёплой базы.',
+        status:'validated',priority:'B',unit:'Пилоты',plan:1,created_at:daysAgo(20)}
+    ],
+    hypTasks:[
+      HT('h1t1','h1','Подготовить методологию оценки возвратов','КЕ',1,'B','manual'),
+      HT('h1t2','h1','Написать 3 статьи про снижение возвратов','КЕ',3,'B','manual'),
+      HT('h1t3','h1','Проработать 20 контактов по гипотезе (касания)','КЕ',20,'A','tracked','touch'),
+      HT('h1t4','h1','Собрать 5 встреч с технологами','КЕ',5,'A','tracked','meeting'),
+      HT('h1t5','h1','Довести 3 компании до пилота','КЕ',3,'A','tracked','agreement'),
+      HT('h2t1','h2','Сегментировать 30 заводов','КЕ',1,'B','manual'),
+      HT('h2t2','h2','Проработать 8 контактов по молочке','КЕ',8,'A','tracked','touch'),
+      HT('h2t3','h2','Получить 4 отклика «интересно»','КЕ',4,'B','manual'),
+      HT('h3t1','h3','Подготовить оффер по подсластителям','КЕ',1,'B','manual'),
+      HT('h3t2','h3','Проработать контакты тёплой базы','КЕ',5,'A','tracked','touch'),
+      HT('h3t3','h3','Провести презентации первому лицу','КЕ',2,'A','tracked','meeting')
+    ],
+    hypSubtasks:[
+      {id:'sb1',hyp_task_id:'h1t1',title:'Собрать данные по возвратам за квартал',is_done:true},
+      {id:'sb2',hyp_task_id:'h1t2',title:'Статья 1 — причины возвратов',is_done:true},
+      {id:'sb3',hyp_task_id:'h1t2',title:'Статья 2 — кейс сети',is_done:false},
+      {id:'sb4',hyp_task_id:'h1t2',title:'Статья 3 — экономика заквасок',is_done:false},
+      {id:'sb5',hyp_task_id:'h2t1',title:'Сегментация 30 заводов проведена',is_done:true},
+      {id:'sb6',hyp_task_id:'h2t3',title:'Отклик 1 — «интересно»',is_done:true},
+      {id:'sb7',hyp_task_id:'h2t3',title:'Отклик 2 — «интересно»',is_done:true},
+      {id:'sb8',hyp_task_id:'h2t3',title:'Отклик 3',is_done:false},
+      {id:'sb9',hyp_task_id:'h2t3',title:'Отклик 4',is_done:false},
+      {id:'sb10',hyp_task_id:'h3t1',title:'Оффер по подсластителям готов',is_done:true}
+    ]
+  };
+  const strat2={
+    id:'s2',name:'Пилот HoReCa (заготовка)',quarter:'2026-Q4',created_at:daysAgo(5),
+    description:'Проба захода в HoReCa: кофейни и локальные сети. Отдельная стратегия — для примера переключения.',
+    expected_effect:'Проверить 1–2 гипотезы, 1 пилот.',
+    kpiTargets:[
+      {id:'kt21',kpi_key:'new_touches',unit:'шт.',plan_value:20,prev_q_value:0},
+      {id:'kt22',kpi_key:'new_meetings',unit:'шт.',plan_value:6,prev_q_value:0},
+      {id:'kt23',kpi_key:'repeat_meetings',unit:'шт.',plan_value:3,prev_q_value:0},
+      {id:'kt24',kpi_key:'agreements',unit:'шт.',plan_value:2,prev_q_value:0},
+      {id:'kt25',kpi_key:'revenue',unit:'руб.',plan_value:500000,prev_q_value:0}
+    ],
+    hypotheses:[
+      {id:'h4',code:'Н1',title:'Кофейням зайдёт премиальная закваска для выпечки',
+        smart:'До 30.11.2026 подтвердить интерес 5 кофеен и запустить 1 пилот выпечки на закваске.',
+        status:'idea',priority:'B',unit:'Пилоты',plan:1,created_at:daysAgo(5)}
+    ],
+    hypTasks:[
+      HT('h4t1','h4','Собрать список 30 кофеен','КЕ',1,'B','manual'),
+      HT('h4t2','h4','Проработать 15 контактов','КЕ',15,'A','tracked','touch')
+    ],
+    hypSubtasks:[{id:'sb20',hyp_task_id:'h4t1',title:'Список собран',is_done:false}]
+  };
+  return {strategies:[strat1,strat2],currentStrategyId:'s1',companies,contacts,tasks};
+}
+
+/* ============================ ДВИЖОК ============================ */
+const TASK_TYPE_META={
+  analyze_signal:{label:'Разобрать сигнал',metric:null,stage:'in_work',cat:'analyze'},
+  touch_new:{label:'Новое касание',metric:'new_touches',stage:'touched',cat:'touch'},
+  touch_repeat:{label:'Повторное касание',metric:null,stage:null,cat:'touch'},
+  meeting_new:{label:'Новая встреча',metric:'new_meetings',stage:'met',cat:'meeting'},
+  meeting_repeat:{label:'Повторная встреча',metric:'repeat_meetings',stage:null,cat:'meeting'},
+  agreement:{label:'Договорённость / пилот',metric:'agreements',stage:'agreement',cat:'agreement'},
+  custom:{label:'Свободная задача',metric:null,stage:null,cat:'custom'}
+};
+const NEXT_STEP_TYPES=['touch_new','touch_repeat','meeting_new','meeting_repeat','agreement','custom'];
+const STAGE_ORDER=['new_signal','in_work','touched','met','agreement','revenue'];
+const STAGE_LABEL={new_signal:'Новый сигнал',rejected:'Отклонён',in_work:'В работе',touched:'Касание',met:'Встреча',agreement:'Договорённость',revenue:'Выручка',excluded:'Исключена'};
+const STAGE_CHIP={new_signal:'chip-neutral',rejected:'chip-signal',in_work:'chip-blueprint',touched:'chip-brasssoft',met:'chip-brasssoft',agreement:'chip-brass',revenue:'chip-moss',excluded:'chip-ink'};
+const STATUS_LABEL={planned:'Запланирована',waiting:'Ждёт ответа',done:'Завершена',cancelled:'Отменена'};
+const STATUS_CHIP={planned:'chip-blueprint',waiting:'chip-brasssoft',done:'chip-mosssoft',cancelled:'chip-ink'};
+const HYP_STATUS=['idea','in_work','validated','paused','rejected'];
+const HYP_STATUS_LABEL={idea:'Идея',in_work:'В работе',validated:'Подтверждена',paused:'Пауза',rejected:'Отклонена'};
+const HYP_STATUS_CHIP={idea:'chip-neutral',in_work:'chip-blueprint',validated:'chip-moss',paused:'chip-brasssoft',rejected:'chip-signal'};
+const HT_STATUS_LABEL={planned:'Не начата',in_work:'В работе',done:'Завершена'};
+const HT_STATUS_CHIP={planned:'chip-neutral',in_work:'chip-blueprint',done:'chip-mosssoft'};
+const PRIO_LABEL={A:'Высокий',B:'Средний',C:'Низкий'};
+const STAGE_WEIGHT={in_work:1,touched:2,met:3,agreement:5};
+const ACTIVE=['in_work','touched','met','agreement'];
+const DAY=86400000;
+const rank=s=>STAGE_ORDER.indexOf(s);
+const nextStage=(cur,tgt)=>(!tgt?cur:(rank(tgt)>rank(cur)?tgt:cur));
+const isActive=c=>ACTIVE.includes(c.funnel_stage)&&!c.is_excluded;
+const uid=()=>Math.random().toString(36).slice(2,10);
+
+// доступ к текущей стратегии и её вложенным массивам
+function CS(s){return s.strategies.find(x=>x.id===s.currentStrategyId)||s.strategies[0];}
+const allHtasks=s=>s.strategies.flatMap(st=>st.hypTasks);
+const allSubs=s=>s.strategies.flatMap(st=>st.hypSubtasks);
+const allHyps=s=>s.strategies.flatMap(st=>st.hypotheses);
+const hypById=(s,id)=>allHyps(s).find(h=>h.id===id);
+const htById=(s,id)=>allHtasks(s).find(t=>t.id===id);
+const stratOfHyp=(s,hid)=>s.strategies.find(st=>st.hypotheses.some(h=>h.id===hid));
+const stratOfTask=(s,tid)=>s.strategies.find(st=>st.hypTasks.some(t=>t.id===tid));
+
+function metrics(s){
+  const done=s.tasks.filter(t=>t.status==='done');
+  const n=type=>done.filter(t=>t.type===type).length;
+  return {new_touches:n('touch_new'),repeat_touches:n('touch_repeat'),new_meetings:n('meeting_new'),
+    repeat_meetings:n('meeting_repeat'),agreements:n('agreement'),
+    revenue:s.companies.reduce((a,c)=>a+(c.revenue_amount||0),0)};
+}
+function contactStats(s,cid){
+  const done=s.tasks.filter(t=>t.status==='done'&&t.contact_id===cid);
+  return {touches:done.filter(t=>TASK_TYPE_META[t.type].cat==='touch').length,
+          meetings:done.filter(t=>TASK_TYPE_META[t.type].cat==='meeting').length};
+}
+function contactCat(s,cid){
+  const done=s.tasks.filter(t=>t.status==='done'&&t.contact_id===cid);
+  if(done.some(t=>TASK_TYPE_META[t.type].cat==='agreement'))return 3;
+  if(done.some(t=>TASK_TYPE_META[t.type].cat==='meeting'))return 2;
+  if(done.some(t=>TASK_TYPE_META[t.type].cat==='touch'))return 1;
+  return 0;
+}
+function averages(s){
+  const doneTouch=s.tasks.filter(t=>t.status==='done'&&TASK_TYPE_META[t.type].cat==='touch');
+  const doneMeet =s.tasks.filter(t=>t.status==='done'&&TASK_TYPE_META[t.type].cat==='meeting');
+  const engagedCompanies=s.companies.filter(c=>rank(c.funnel_stage)>=rank('in_work')).length||1;
+  const engagedContacts=new Set(doneTouch.concat(doneMeet).map(t=>t.contact_id).filter(Boolean)).size||1;
+  return {touchPerCompany:doneTouch.length/engagedCompanies,meetPerCompany:doneMeet.length/engagedCompanies,
+    touchPerContact:doneTouch.length/engagedContacts,meetPerContact:doneMeet.length/engagedContacts};
+}
+function companyFunnel(s){
+  const cs=s.companies, reach=st=>cs.filter(c=>rank(c.funnel_stage)>=rank(st)).length;
+  return [{label:'Выгружено',value:cs.length},{label:'В разбор',value:reach('in_work')},
+    {label:'Касание',value:reach('touched')},{label:'Встреча',value:reach('met')},
+    {label:'Выручка',value:cs.filter(c=>c.funnel_stage==='revenue').length}];
+}
+function contactFunnel(s){
+  const matched=s.contacts.filter(k=>k.company_id!==null);
+  const cats=matched.map(k=>contactCat(s,k.id));
+  const ge=n=>cats.filter(r=>r>=n).length;
+  return [{label:'Контакты',value:matched.length},{label:'Касание',value:ge(1)},
+    {label:'Встреча',value:ge(2)},{label:'Договорённость',value:ge(3)}];
+}
+const KPI_LABEL={new_touches:'Количество новых касаний',new_meetings:'Количество новых встреч',repeat_meetings:'Количество повторных встреч',agreements:'Выход на договорённости',revenue:'Выручка'};
+function kpiRows(s){
+  const m=metrics(s), by={new_touches:m.new_touches,new_meetings:m.new_meetings,repeat_meetings:m.repeat_meetings,agreements:m.agreements,revenue:m.revenue};
+  return CS(s).kpiTargets.map(t=>{const fact=by[t.kpi_key]||0;return{key:t.kpi_key,label:KPI_LABEL[t.kpi_key],unit:t.unit,plan:t.plan_value,fact,
+    completion:t.plan_value>0?Math.round(fact/t.plan_value*100):0,delta:fact-t.prev_q_value,prevQ:t.prev_q_value};});
+}
+function openTaskFor(s,cid){return s.tasks.find(t=>t.company_id===cid&&(t.status==='planned'||t.status==='waiting'))||null;}
+function focus(s){
+  const now=NOW.getTime();
+  return s.companies.filter(isActive).map(c=>{
+    const ot=openTaskFor(s,c.id);
+    const idle=Math.max(0,Math.floor((now-new Date(c.last_activity_at).getTime())/DAY));
+    const overdue=!!(ot&&ot.due_at)&&new Date(ot.due_at).getTime()<now;
+    const stalled=!ot||overdue;
+    return {company:c,openTask:ot,stalled,overdue,idleDays:idle,priority:(STAGE_WEIGHT[c.funnel_stage]||1)*(idle+1)};
+  }).sort((a,b)=>a.stalled!==b.stalled?(a.stalled?-1:1):b.priority-a.priority);
+}
+function htContrib(s,ht){return s.tasks.filter(t=>t.status==='done'&&t.hyp_task_id===ht.id&&TASK_TYPE_META[t.type].cat===ht.track);}
+function htSubs(s,ht){return allSubs(s).filter(x=>x.hyp_task_id===ht.id);}
+function htFact(s,ht){return ht.mode==='tracked'?htContrib(s,ht).length:htSubs(s,ht).filter(x=>x.is_done).length;}
+function htPlan(s,ht){return ht.mode==='tracked'?ht.plan:Math.max(htSubs(s,ht).length,0);}
+function htStatusEffective(s,ht){const f=htFact(s,ht),p=htPlan(s,ht);if(p>0&&f>=p)return 'done';return f>0?'in_work':'planned';}
+function hypProgress(s,h){
+  const ts=allHtasks(s).filter(t=>t.hypothesis_id===h.id);
+  if(!ts.length)return 0;
+  return ts.reduce((a,t)=>{const p=htPlan(s,t);return a+(p>0?Math.min(1,htFact(s,t)/p):0);},0)/ts.length;
+}
+const fmtN=n=>new Intl.NumberFormat('ru-RU').format(n);
+const fmt1=n=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(n);
+const fmtM=n=>new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(n);
+const fmtD=iso=>iso?new Date(iso).toLocaleDateString('ru-RU',{day:'2-digit',month:'short',year:'numeric'}):'—';
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+const initials=n=>String(n||'').split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
+
+/* ============================ СТОР ============================ */
+const KEY='abm-state-html-v4';
+const App={
+  state:load(), modal:null, compTab:'dossier', funnelMode:'company',
+  collapsedHyps:{}, expandedHt:{}, _onDismiss:null,
+  save(){localStorage.setItem(KEY,JSON.stringify(this.state));},
+  set(fn){fn(this.state);this.save();render();},
+  reset(){if(confirm('Сбросить все данные к исходным тестовым?')){this.state=seedState();this.save();render();}},
+  nowIso(){return new Date().toISOString();},
+
+  takeToWork(cid){this.set(s=>{
+    s.tasks.push({id:uid(),company_id:cid,contact_id:null,hypothesis_id:null,hyp_task_id:null,title:'Разобрать сигнал',description:'Вчитаться в компанию, определить предложение.',type:'analyze_signal',status:'planned',result_note:'',is_next_step:false,due_at:null,created_at:App.nowIso(),completed_at:null});
+    const c=s.companies.find(x=>x.id===cid); if(c){c.funnel_stage='in_work';c.last_activity_at=App.nowIso();}
+  });},
+  rejectSignal(cid){this.set(s=>{const c=s.companies.find(x=>x.id===cid);if(c)c.funnel_stage='rejected';});},
+  excludeCompany(cid,reason){this.set(s=>{
+    const c=s.companies.find(x=>x.id===cid); if(c){c.funnel_stage='excluded';c.is_excluded=true;c.excluded_reason=reason||'Без причины';}
+    s.tasks.forEach(t=>{if(t.company_id===cid&&(t.status==='planned'||t.status==='waiting'))t.status='cancelled';});
+  });},
+  excludeContact(kid,reason){this.set(s=>{
+    const k=s.contacts.find(x=>x.id===kid); if(k){k.status='excluded';k.excluded_reason=reason||'Без причины';}
+    s.tasks.forEach(t=>{if(t.contact_id===kid&&(t.status==='planned'||t.status==='waiting'))t.status='cancelled';});
+  });},
+  restoreContact(kid){this.set(s=>{const k=s.contacts.find(x=>x.id===kid);if(k){k.status='active';k.excluded_reason='';}});},
+  recordRevenue(cid,amount){this.set(s=>{const c=s.companies.find(x=>x.id===cid);if(c){c.funnel_stage='revenue';c.revenue_amount=amount;c.last_activity_at=App.nowIso();}});},
+  addStep(cid,d){this.set(s=>{
+    s.tasks.push({id:uid(),company_id:cid,contact_id:d.contactId||null,hypothesis_id:d.hypId||null,hyp_task_id:d.hypTaskId||null,
+      title:d.title||TASK_TYPE_META[d.type].label,description:'',type:d.type,status:'planned',result_note:'',is_next_step:true,due_at:d.due||null,created_at:App.nowIso(),completed_at:null});
+  });},
+  completeTask(id,note,next){this.set(s=>{
+    const t=s.tasks.find(x=>x.id===id); if(!t)return;
+    const meta=TASK_TYPE_META[t.type];
+    t.status='done';t.result_note=note;t.completed_at=App.nowIso();
+    if(next){s.tasks.push({id:uid(),company_id:t.company_id,contact_id:next.contactId||null,hypothesis_id:next.hypId||null,hyp_task_id:next.hypTaskId||null,
+      title:next.title||TASK_TYPE_META[next.type].label,description:'',type:next.type,status:'planned',result_note:'',is_next_step:true,due_at:next.due||null,created_at:App.nowIso(),completed_at:null});}
+    const c=s.companies.find(x=>x.id===t.company_id);
+    if(c){c.funnel_stage=nextStage(c.funnel_stage,meta.stage);c.last_activity_at=App.nowIso();}
+  });},
+  toggleSubtask(id){this.set(s=>{const x=allSubs(s).find(y=>y.id===id);if(x)x.is_done=!x.is_done;});},
+  addSubtask(htid,title){this.set(s=>{const st=stratOfTask(s,htid);if(st)st.hypSubtasks.push({id:uid(),hyp_task_id:htid,title:title||'Новая подзадача',is_done:false});});App.expandedHt[htid]=true;},
+  deleteSubtask(id){this.set(s=>{s.strategies.forEach(st=>{st.hypSubtasks=st.hypSubtasks.filter(x=>x.id!==id);});});},
+  addHypTask(hypId,d){this.set(s=>{const st=stratOfHyp(s,hypId);if(st)st.hypTasks.push({id:uid(),hypothesis_id:hypId,title:d.title,unit:d.unit||'КЕ',plan:Number(d.plan)||1,priority:d.priority||'B',mode:'manual',track:null});});},
+  deleteHypTask(id){if(!confirm('Удалить задачу гипотезы с её подзадачами?'))return;this.set(s=>{const st=stratOfTask(s,id);if(st){st.hypTasks=st.hypTasks.filter(t=>t.id!==id);st.hypSubtasks=st.hypSubtasks.filter(x=>x.hyp_task_id!==id);}});},
+  setHypStatus(id,v){this.set(s=>{const h=hypById(s,id);if(h)h.status=v;});},
+  deleteHyp(id){if(!confirm('Удалить гипотезу со всеми задачами?'))return;this.set(s=>{const st=stratOfHyp(s,id);if(st){const ids=st.hypTasks.filter(t=>t.hypothesis_id===id).map(t=>t.id);st.hypotheses=st.hypotheses.filter(h=>h.id!==id);st.hypTasks=st.hypTasks.filter(t=>t.hypothesis_id!==id);st.hypSubtasks=st.hypSubtasks.filter(x=>!ids.includes(x.hyp_task_id));}});},
+  addHypothesis(d){this.set(s=>{const st=CS(s);const n=st.hypotheses.length+1;
+    st.hypotheses.push({id:uid(),code:'Н'+n,title:d.title,smart:d.smart,status:'idea',priority:d.priority||'B',unit:d.unit||'Цель',plan:Number(d.plan)||1,created_at:App.nowIso()});});},
+  setStrategyField(patch){this.set(s=>Object.assign(CS(s),patch));},
+  switchStrategy(id){this.set(s=>{s.currentStrategyId=id;});},
+  addStrategy(strat){this.set(s=>{s.strategies.push(strat);s.currentStrategyId=strat.id;});},
+
+  go(hash){location.hash=hash;},
+  setTab(t){this.compTab=t;renderBody();},
+  setFunnel(m){this.funnelMode=m;renderBody();},
+  toggleHypCollapse(id){this.collapsedHyps[id]=!this.collapsedHyps[id];renderBody();},
+  toggleHt(id){this.expandedHt[id]=!this.expandedHt[id];renderBody();},
+  openModal(html,onDismiss){this.modal=html;this._onDismiss=onDismiss||null;renderModal();},
+  dismiss(){if(this._onDismiss){const f=this._onDismiss;this._onDismiss=null;f();}else this.closeModal();},
+  cancelModal(){this._onDismiss=null;this.closeModal();},
+  closeModal(){this.modal=null;this._onDismiss=null;renderModal();}
+};
+function load(){try{const r=localStorage.getItem(KEY);if(r){const p=JSON.parse(r);if(p&&p.strategies)return p;}}catch(e){}return seedState();}
+function toast(msg){const el=document.getElementById('toast-root');el.innerHTML=`<div class="toast">${esc(msg)}</div>`;setTimeout(()=>{el.innerHTML='';},3200);}
+
+/* ============================ ИМПОРТ ============================ */
+const norm=x=>String(x==null?'':x).trim().toLowerCase().replace(/\s+/g,' ');
+function rowGet(row,cands,opts){opts=opts||{};
+  for(const key of Object.keys(row)){const nk=norm(key);
+    for(const c of cands){if(opts.exact?nk===c:nk.includes(c)){if(opts.not&&opts.not.some(x=>nk.includes(x)))continue;const v=row[key];if(v!=='' && v!=null)return String(v).trim();}}}
+  return '';
+}
+function importRows(rows){
+  const s=App.state; let addedC=0,updC=0,addedK=0,updK=0;
+  rows.forEach(row=>{
+    const compName=rowGet(row,['компания'],{not:['№']}) || rowGet(row,['company','наименование']);
+    const extCoNo = rowGet(row,['№ компании','номер компании']) || rowGet(row,['№','n','no'],{exact:false,not:['контакт','компании']});
+    const fullName = rowGet(row,['имя и фамилия','фио','имя','full name','name'],{not:['компан']});
+    const hasCompany = !!compName || !!extCoNo;
+    const hasContact = !!fullName;
+    // --- компания ---
+    let comp=null;
+    if(hasCompany){
+      const key = extCoNo || compName;
+      comp = s.companies.find(c=>(extCoNo&&c.ext_no===extCoNo)||(compName&&norm(c.name)===norm(compName)));
+      const fields={
+        ext_no: extCoNo||(comp?comp.ext_no:String(s.companies.length+1)),
+        name: compName||(comp?comp.name:'Без названия'),
+        priority: (rowGet(row,['приоритет']).toUpperCase()||'B').slice(0,1).replace(/[^ABC]/,'B'),
+        segment: rowGet(row,['сегмент']), category: rowGet(row,['категория'])||'—', geography: rowGet(row,['география'])||'—',
+        why_fit: rowGet(row,['почему подходит']), signal_note: rowGet(row,['сигнал','наблюдение']),
+        relevant_hypothesis_text: rowGet(row,['релевантная гипотеза']), what_to_check: rowGet(row,['что проверить']),
+        who_to_find: rowGet(row,['кого искать']), extended_reason: rowGet(row,['расширенный повод']),
+        first_message_template: rowGet(row,['заготовка первого']), second_message_template: rowGet(row,['заготовка второго'])
+      };
+      if(comp){Object.keys(fields).forEach(k=>{if(fields[k]!=='')comp[k]=fields[k];});updC++;}
+      else{comp=Object.assign({id:uid(),funnel_stage:'new_signal',is_excluded:false,excluded_reason:'',revenue_amount:0,created_at:App.nowIso(),last_activity_at:App.nowIso()},fields);s.companies.push(comp);addedC++;}
+    }
+    // --- контакт ---
+    if(hasContact){
+      const contactNo = rowGet(row,['контакт №','контакт номер']) || rowGet(row,['контакт'],{not:['источник']}) || '1';
+      const coRef = comp || s.companies.find(c=>(extCoNo&&c.ext_no===extCoNo)||(compName&&norm(c.name)===norm(compName)));
+      let k = s.contacts.find(x=> x.ext_company_no===(extCoNo||'')&&x.contact_no===contactNo && norm(x.full_name)===norm(fullName));
+      const kf={
+        company_id: coRef?coRef.id:null, ext_company_no: extCoNo||'', company_name: compName||(coRef?coRef.name:''),
+        priority: rowGet(row,['приоритет'])||'', segment: rowGet(row,['сегмент'])||'', role_target: rowGet(row,['роль','цель'])||'ЛПР',
+        contact_no: contactNo, full_name: fullName, position: rowGet(row,['должность']),
+        phone: rowGet(row,['телефон','phone']), email: rowGet(row,['почта','email','e-mail','майл']),
+        telegram: rowGet(row,['telegram','телеграм']), tenchat: rowGet(row,['tenchat']), network: rowGet(row,['сетка']),
+        linkedin: rowGet(row,['linkedin']), other_social: rowGet(row,['другие соц']), source: rowGet(row,['источник'])||'импорт',
+        last_digital_trace: rowGet(row,['последний цифровой след','цифровой след']), last_trace_date: rowGet(row,['дата последнего следа']),
+        check_date: rowGet(row,['дата проверки']), confidence: rowGet(row,['уверенность'])||'—',
+        comment: rowGet(row,['комментарий']), how_to_get: rowGet(row,['как добрать','если данных нет']), status:'active', excluded_reason:''
+      };
+      if(k){Object.assign(k,kf);updK++;} else {s.contacts.push(Object.assign({id:uid()},kf));addedK++;}
+    }
+  });
+  // ре-матч сирот
+  s.contacts.forEach(k=>{ if(!k.company_id){ const c=s.companies.find(c=>(k.ext_company_no&&c.ext_no===k.ext_company_no)||(k.company_name&&norm(c.name)===norm(k.company_name))); if(c)k.company_id=c.id; } });
+  App.save(); render();
+  toast(`Импорт: компаний +${addedC}/обн.${updC}, контактов +${addedK}/обн.${updK}`);
+}
+function parseCSV(text){
+  const firstLine=text.split(/\r?\n/)[0]||''; const delim=(firstLine.split(';').length>firstLine.split(',').length)?';':',';
+  const rows=[]; let i=0,field='',row=[],inQ=false;
+  const pushF=()=>{row.push(field);field='';}; const pushR=()=>{rows.push(row);row=[];};
+  while(i<text.length){const ch=text[i];
+    if(inQ){ if(ch==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQ=false; } else field+=ch; }
+    else { if(ch==='"')inQ=true; else if(ch===delim)pushF(); else if(ch==='\n'){pushF();pushR();} else if(ch==='\r'){} else field+=ch; }
+    i++;
+  }
+  if(field.length||row.length){pushF();pushR();}
+  const header=rows.shift()||[]; return rows.filter(r=>r.some(x=>String(x).trim()!=='')).map(r=>{const o={};header.forEach((h,idx)=>{o[h]=r[idx]!=null?r[idx]:'';});return o;});
+}
+function handleExcelFile(file){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  const fr=new FileReader();
+  fr.onload=e=>{
+    try{
+      let rows=[];
+      if(ext==='csv'){ rows=parseCSV(String(e.target.result)); }
+      else{
+        if(typeof XLSX==='undefined'){toast('Не загрузилась библиотека чтения Excel (нужен интернет). Сохраните как CSV.');return;}
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+        wb.SheetNames.forEach(sn=>{ rows=rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:''})); });
+      }
+      if(!rows.length){toast('Файл пустой или не распознан.');return;}
+      importRows(rows);
+    }catch(err){toast('Ошибка импорта: '+err.message);}
+  };
+  if(ext==='csv')fr.readAsText(file,'utf-8'); else fr.readAsArrayBuffer(file);
+}
+function handleStrategyFile(file){
+  const fr=new FileReader();
+  fr.onload=e=>{
+    try{
+      const j=JSON.parse(String(e.target.result));
+      const sid=uid();
+      const strat={id:sid,name:j.name||'Импортированная стратегия',quarter:j.quarter||'',created_at:App.nowIso(),
+        description:j.description||'',expected_effect:j.expected_effect||'',
+        kpiTargets:(j.kpiTargets||[]).map((t,i)=>({id:uid(),kpi_key:t.kpi_key,unit:t.unit||'шт.',plan_value:Number(t.plan_value)||0,prev_q_value:Number(t.prev_q_value)||0})),
+        hypotheses:[],hypTasks:[],hypSubtasks:[]};
+      (j.hypotheses||[]).forEach((h,hi)=>{
+        const hid=uid();
+        strat.hypotheses.push({id:hid,code:h.code||('Н'+(hi+1)),title:h.title||'Гипотеза',smart:h.smart||'',status:h.status||'idea',priority:(h.priority||'B').toUpperCase().slice(0,1),unit:h.unit||'Цель',plan:Number(h.plan)||1,created_at:App.nowIso()});
+        (h.tasks||[]).forEach(t=>{
+          const tid=uid(); const tracked=t.tracked||t.track;
+          strat.hypTasks.push({id:tid,hypothesis_id:hid,title:t.title||'Задача',unit:t.unit||'КЕ',plan:Number(t.plan)||1,priority:(t.priority||'B').toUpperCase().slice(0,1),mode:tracked?'tracked':'manual',track:tracked||null});
+          if(!tracked)(t.subtasks||[]).forEach(stt=>{ strat.hypSubtasks.push({id:uid(),hyp_task_id:tid,title:(typeof stt==='string'?stt:(stt.title||'Подзадача')),is_done:!!(stt&&stt.is_done)}); });
+        });
+      });
+      App.addStrategy(strat); location.hash='#/hypotheses';
+      toast('Стратегия загружена: '+strat.name);
+    }catch(err){toast('Не удалось прочитать JSON: '+err.message);}
+  };
+  fr.readAsText(file,'utf-8');
+}
+function downloadFile(name,content,type){const blob=new Blob([content],{type:type||'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function downloadStrategyTemplate(){
+  const sample={name:'Название стратегии',quarter:'2026-Q4',description:'Описание инициативы',expected_effect:'Ожидаемый эффект',
+    kpiTargets:[{kpi_key:'new_touches',unit:'шт.',plan_value:30,prev_q_value:0}],
+    hypotheses:[{code:'Н1',title:'Тезис гипотезы',smart:'SMART-цель…',priority:'A',unit:'Пилоты',plan:2,
+      tasks:[{title:'Проработать 15 контактов',priority:'A',tracked:'touch',plan:15},
+             {title:'Подготовить материалы',priority:'B',subtasks:['Черновик','Финал']}]}]};
+  downloadFile('abm-strategy-template.json',JSON.stringify(sample,null,2),'application/json');
+}
+function downloadExcelTemplate(){
+  if(typeof XLSX==='undefined'){toast('Библиотека Excel не загрузилась (нужен интернет).');return;}
+  const wb=XLSX.utils.book_new();
+  const comp=[['№','приоритет','сегмент','категория','компания','география','почему подходит','сигнал / наблюдение','релевантная гипотеза','что проверить / предложить','кого искать для входа','расширенный повод для сообщения','заготовка первого сообщения','заготовка второго сообщения'],
+    ['101','A','Хлебопечение','Производство','ООО «Тест-Хлеб»','Москва','растут','открыли цех','закваска','объёмы','технолог','повод','привет','кейс']];
+  const cont=[['№ компании','Компания','Приоритет','Сегмент','Роль из столбца K / цель','Контакт №','Имя и фамилия','Должность','Телефон','Почта','Telegram','TenChat','Сетка','LinkedIn','Другие соцсети','Источник контакта','Последний цифровой след','Дата последнего следа','Дата проверки','Уверенность','Комментарий','Если данных нет — как добрать'],
+    ['101','ООО «Тест-Хлеб»','A','Хлебопечение','ЛПР','1','Иван Петров','Технолог','+7 900 000-00-00','ivan@test.ru','@ivan','','','','','LinkedIn','','','','высокая','','']];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(comp),'Компании');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cont),'Контакты');
+  XLSX.writeFile(wb,'abm-import-template.xlsx');
+}
+
+/* ============================ ВИД ============================ */
+const NAV=[
+  {to:'#/',label:'Обзор',ico:'◱',end:true},
+  {to:'#/strategy',label:'Стратегия',ico:'❋'},
+  {to:'#/hypotheses',label:'Гипотезы',ico:'⚗'},
+  {to:'#/signals',label:'Сигналы',ico:'◎'},
+  {to:'#/companies',label:'Компании',ico:'⌂'},
+  {to:'#/contacts',label:'Контакты',ico:'☺'},
+  {to:'#/tasks',label:'Задачи',ico:'✓'}
+];
+function chip(cls,txt){return `<span class="chip ${cls}">${esc(txt)}</span>`;}
+function stageChip(st){return chip(STAGE_CHIP[st],STAGE_LABEL[st]);}
+function statusChip(st){return chip(STATUS_CHIP[st],STATUS_LABEL[st]);}
+function prio(p){return `<span class="prio prio-${esc(p)}">${esc(p)}</span>`;}
+function prioFull(p){return `${prio(p)}<span class="faint" style="font-size:.75rem;font-weight:600">${PRIO_LABEL[p]||''}</span>`;}
+const contactName=(s,id)=>{const k=s.contacts.find(x=>x.id===id);return k?k.full_name:null;};
+const companyName=(s,id)=>{const c=s.companies.find(x=>x.id===id);return c?c.name:'—';};
+
+function sidebar(){
+  const s=App.state;
+  const signals=s.companies.filter(c=>c.funnel_stage==='new_signal').length;
+  const open=s.tasks.filter(t=>t.status==='planned'||t.status==='waiting').length;
+  const stalled=focus(s).filter(f=>f.stalled).length;
+  const badge={'#/signals':signals,'#/tasks':open};
+  const cur=location.hash||'#/';
+  const items=NAV.map(n=>{
+    const active=n.end?(cur==='#/'||cur===''):cur.startsWith(n.to);
+    const b=badge[n.to];
+    return `<a href="${n.to}" class="${active?'active':''}"><span class="ico">${n.ico}</span><span class="grow">${n.label}</span>${b?`<span class="nav-badge">${b}</span>`:''}</a>`;
+  }).join('');
+  return `<aside class="sidebar">
+    <div class="brand"><div class="brand-badge">А</div><div><b>ABM-движок</b><span class="eyebrow">следующего действия</span></div></div>
+    <nav class="nav">${items}</nav>
+    ${stalled?`<a class="sidebar-warn" href="#/tasks" onclick="taskFilters.status='stalled'"><span class="beacon"></span> Без следующего шага: <b style="margin-left:2px">${stalled}</b> →</a>`:''}
+    <div class="sidebar-foot">
+      <div class="eyebrow" style="margin-bottom:.3rem">Стратегия</div>
+      <select class="field sm" onchange="App.switchStrategy(this.value)">${s.strategies.map(st=>`<option value="${st.id}" ${st.id===s.currentStrategyId?'selected':''}>${esc(st.name)}</option>`).join('')}</select>
+      <div class="rowflex" style="gap:6px;margin-top:8px">
+        <button class="btn btn-ghost btn-xs" style="flex:1" onclick="document.getElementById('fileStrategy').click()">Загрузить стратегию</button>
+        <button class="btn btn-ghost btn-xs" style="flex:1" onclick="document.getElementById('fileExcel').click()">Загрузить Excel</button>
+      </div>
+      <div style="margin-top:8px;font-size:.72rem;color:var(--ink-3)"><a href="#/strategy" style="text-decoration:underline">форматы и шаблоны</a> · <a href="#" onclick="App.reset();return false" style="text-decoration:underline">сбросить</a></div>
+    </div>
+  </aside>`;
+}
+
+/* --- Дашборд --- */
+function funnelPanel(s){
+  const mode=App.funnelMode;
+  const data=mode==='company'?companyFunnel(s):contactFunnel(s);
+  const maxF=Math.max(1,...data.map(x=>x.value));
+  const fc=['var(--blueprint)','var(--blueprint-2)','var(--blueprint-3)','var(--brass)','var(--moss)'];
+  return `<div class="panel">
+    <div class="panel-head"><h2 class="panel-title">Воронка · уникальные ${mode==='company'?'компании':'контакты'}</h2>
+      <div class="seg seg-mini"><button class="${mode==='company'?'on':''}" onclick="App.setFunnel('company')">Компании</button><button class="${mode==='contact'?'on':''}" onclick="App.setFunnel('contact')">Контакты</button></div></div>
+    <div class="funnel">${data.map((x,i)=>{const w=Math.max(22,Math.round(x.value/maxF*100));
+      return `<div class="rung" style="width:${w}%;background:${fc[i]||'var(--moss)'}"><span class="rl">${x.label}</span><span class="rv">${x.value}</span></div>`;}).join('')}</div>
+    <div class="faint" style="font-size:.72rem;padding:0 1.15rem 1rem">${mode==='company'?'Компания входит в стадию, если хотя бы с одним её ЛПР совершено такое действие.':'Каждый ЛПР считается по максимально достигнутому действию, без повторов.'}</div></div>`;
+}
+function pageDashboard(){
+  const s=App.state, m=metrics(s), k=kpiRows(s), f=focus(s), avg=averages(s);
+  const signals=s.companies.filter(c=>c.funnel_stage==='new_signal').length;
+  const processed=s.companies.length-signals, stalled=f.filter(x=>x.stalled).length;
+  const openN=s.tasks.filter(t=>t.status==='planned'||t.status==='waiting').length;
+  const tiles=`<div class="grid g4">
+    ${tile('Сигналы',`${processed} / ещё ${signals}`,'обработано / ждут решения','c-brass',"App.go('#/signals')")}
+    ${tile('Новых касаний',fmtN(m.new_touches),'записано в сервисе','c-blueprint')}
+    ${tile('Открытых задач',fmtN(openN),'следующие шаги','c-teal',"App.go('#/tasks')")}
+    ${tile('Без следующего шага',fmtN(stalled),'зависли / просрочка',stalled?'c-signal':'c-ink3',"taskFilters.status='stalled';App.go('#/tasks')")}
+  </div>`;
+  const kpiTable=`<div class="panel span2">
+    <div class="panel-head"><h2 class="panel-title">KPI · план / факт (${esc(CS(s).quarter||'')})</h2><span class="eyebrow">${esc(CS(s).name)}</span></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th class="tl">KPI</th><th>Ед.</th><th class="tr">План</th><th class="tr">Факт</th><th class="tr">Вып.</th><th class="tr">ΔQ</th><th class="tr" style="padding-right:1.15rem">Прошлый Q</th></tr></thead>
+      <tbody>${k.map(r=>{const money=r.unit==='руб.';const f2=n=>money?fmtM(n):fmtN(n);const pc=r.completion>=100?'pct-hi':r.completion>=50?'pct-mid':'pct-lo';
+        return `<tr class="hoverable"><td class="tl" style="font-weight:500">${esc(r.label)}</td><td class="faint">${esc(r.unit)}</td>
+          <td class="tr readout">${f2(r.plan)}</td><td class="tr readout" style="font-weight:600">${f2(r.fact)}</td>
+          <td class="tr"><span class="pct ${pc}">${r.completion}%</span></td>
+          <td class="tr readout ${r.delta>=0?'c-moss':'c-signal'}">${r.delta>=0?'+':''}${f2(r.delta)}</td>
+          <td class="tr readout faint" style="padding-right:1.15rem">${f2(r.prevQ)}</td></tr>`;}).join('')}</tbody>
+    </table></div></div>`;
+  const metricsPanel=`<div class="panel"><div class="panel-head"><h2 class="panel-title">Метрики (с повторами)</h2></div>
+    <div class="metrics">${mCell('Новые касания',m.new_touches)}${mCell('Повторные касания',m.repeat_touches)}${mCell('Новые встречи',m.new_meetings)}${mCell('Повторные встречи',m.repeat_meetings)}${mCell('Договорённости',m.agreements)}${mCell('Выручка',m.revenue,true)}</div></div>`;
+  const avgPanel=`<div class="panel"><div class="panel-head"><h2 class="panel-title">Средние — интенсивность</h2></div>
+    <div class="metrics">${mCellRaw('Касаний на компанию',fmt1(avg.touchPerCompany))}${mCellRaw('Встреч на компанию',fmt1(avg.meetPerCompany))}${mCellRaw('Касаний на ЛПР',fmt1(avg.touchPerContact))}${mCellRaw('Встреч на ЛПР',fmt1(avg.meetPerContact))}</div></div>`;
+  const focusPanel=`<div class="panel">
+    <div class="panel-head"><h2 class="panel-title">⊙ Фокус — с кем работать сейчас</h2><span class="eyebrow">${f.length} активных</span></div>
+    <div class="focus-body">${f.length?'<div class="focus-rail"></div>':''}
+      ${f.length?f.map(x=>{const kn=x.openTask&&x.openTask.contact_id?contactName(s,x.openTask.contact_id):null;
+        const btn=x.openTask?`<button class="btn btn-primary btn-sm" onclick="ui.complete('${x.openTask.id}')">Завершить шаг</button>`:`<button class="btn btn-signal btn-sm" onclick="App.go('#/companies/${x.company.id}')">Назначить шаг</button>`;
+        return `<div class="focus-item"><span class="focus-node"></span><div style="flex:1;min-width:0">
+            <div class="rowflex"><a href="#/companies/${x.company.id}" class="link" style="font-weight:600">${esc(x.company.name)}</a>${stageChip(x.company.funnel_stage)}${x.stalled?`<span class="chip chip-signal"><span class="beacon"></span>${x.overdue?'просрочка':'без шага'}</span>`:''}</div>
+            <div class="faint" style="font-size:.75rem;margin-top:2px">${x.openTask?('Шаг: '+esc(x.openTask.title)+(kn?' · ЛПР: '+esc(kn):'')):'Нет следующего шага'} · простой ${x.idleDays} дн.</div>
+          </div>${btn}</div>`;}).join(''):'<div style="padding:1.5rem;text-align:center" class="faint">Нет активных компаний</div>'}
+    </div></div>`;
+  const hypPanel=`<div class="panel"><div class="panel-head"><h2 class="panel-title">⚗ Гипотезы — план / факт</h2><a href="#/hypotheses" class="eyebrow link">Все →</a></div>
+    <div style="padding:1.15rem" class="stack">${CS(s).hypotheses.map(h=>{const p=Math.round(hypProgress(s,h)*100);
+      return `<div><div class="spread" style="margin-bottom:.4rem"><span class="rowflex"><span class="readout faint">${esc(h.code)}</span><span style="font-size:.85rem;font-weight:500">${esc(h.title)}</span>${chip(HYP_STATUS_CHIP[h.status],HYP_STATUS_LABEL[h.status])}${prio(h.priority)}</span><span class="readout c-teal" style="font-weight:600;font-size:.8rem">${p}%</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`;
+    }).join('')||'<div class="faint" style="font-size:.85rem">Гипотез нет.</div>'}</div></div>`;
+  return `<div class="stack">
+    <div class="page-head"><div><div class="eyebrow">Обзор процесса</div><h1>Панель управления</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">${esc(CS(s).name)} · <span class="readout c-brass">${esc(CS(s).quarter||'')}</span></p></div></div>
+    ${tiles}<div class="grid g3">${kpiTable}${metricsPanel}</div><div class="grid g2">${funnelPanel(s)}${avgPanel}</div><div class="grid g2">${focusPanel}${hypPanel}</div>
+  </div>`;
+}
+function tile(l,v,h,c,onclick){return `<div class="tile ${onclick?'click':''}" ${onclick?`onclick="${onclick}"`:''}><div class="eyebrow">${l}</div><div class="val ${c||''}">${v}</div><div class="hint">${h}</div></div>`;}
+function mCell(l,v,money){return `<div><div class="m-val">${money?fmtM(v):fmtN(v)}</div><div class="m-lbl">${l}</div></div>`;}
+function mCellRaw(l,v){return `<div><div class="m-val">${v}</div><div class="m-lbl">${l}</div></div>`;}
+
+/* --- Стратегия --- */
+function pageStrategy(){
+  const s=App.state, cs=CS(s);
+  const done=s.companies.filter(c=>c.funnel_stage==='revenue').length;
+  return `<div class="stack">
+    <div class="page-head"><div><div class="eyebrow c-brass">Основание кампании</div><h1>Стратегия</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Название, описание и ожидаемый эффект · загрузка стратегий и данных</p></div>
+      <div class="rowflex"><button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileStrategy').click()">Загрузить стратегию (JSON)</button><button class="btn btn-brass btn-sm" onclick="document.getElementById('fileExcel').click()">Загрузить Excel</button></div></div>
+
+    <div class="panel" style="padding:1.15rem">
+      <div class="spread"><div class="eyebrow">Активная стратегия</div>
+        <select class="field auto sm" onchange="App.switchStrategy(this.value)">${s.strategies.map(st=>`<option value="${st.id}" ${st.id===s.currentStrategyId?'selected':''}>${esc(st.name)}</option>`).join('')}</select></div>
+    </div>
+
+    <div class="grid g3">
+      ${tile('Квартал',esc(cs.quarter||'—'),'период кампании','c-blueprint')}
+      ${tile('Гипотез',fmtN(cs.hypotheses.length),'в проверке','c-teal')}
+      ${tile('Клиентов с выручкой',fmtN(done),'дошли до оплаты','c-moss')}
+    </div>
+
+    <div class="panel" style="padding:1.4rem">
+      <div class="strat-field" style="margin-top:0"><label class="lbl eyebrow">Название стратегии</label>
+        <input class="field" style="font-family:var(--f-display);font-size:1.05rem;font-weight:600" value="${esc(cs.name)}" onchange="App.setStrategyField({name:this.value})"></div>
+      <div class="grid g2" style="margin-top:1.2rem"><div><label class="lbl eyebrow">Квартал</label><input class="field readout" value="${esc(cs.quarter||'')}" onchange="App.setStrategyField({quarter:this.value})"></div></div>
+      <div class="strat-field"><label class="lbl eyebrow">Описание</label><textarea class="field" rows="4" onchange="App.setStrategyField({description:this.value})">${esc(cs.description||'')}</textarea></div>
+      <div class="strat-field"><label class="lbl eyebrow">Ожидаемый эффект</label><textarea class="field" rows="4" onchange="App.setStrategyField({expected_effect:this.value})">${esc(cs.expected_effect||'')}</textarea></div>
+      <div class="faint" style="font-size:.75rem;margin-top:1rem">Изменения сохраняются автоматически при выходе из поля.</div>
+    </div>
+
+    <div class="panel"><div class="panel-head"><h2 class="panel-title">Форматы загрузки</h2><div class="rowflex"><button class="btn btn-ghost btn-xs" onclick="downloadStrategyTemplate()">Шаблон стратегии (JSON)</button><button class="btn btn-ghost btn-xs" onclick="downloadExcelTemplate()">Шаблон Excel</button></div></div>
+      <div style="padding:1.15rem" class="stack">
+        <div class="info-banner"><b>Стратегия (JSON)</b> — грузит гипотезы, их задачи и подзадачи в отдельную стратегию. Скачайте шаблон, заполните, загрузите. Подзадачи необязательны; для задач с автотрекингом укажите <code>"tracked":"touch"|"meeting"|"agreement"</code>.</div>
+        <div class="info-banner"><b>Excel / CSV</b> — грузит <b>компании и контакты одной таблицей</b> (или двумя листами «Компании» и «Контакты»). Колонки распознаются по названиям из шаблона. Повторная загрузка обновляет по № компании и не плодит дубли. Матч контакт→компания — по «№ компании» или названию.</div>
+      </div>
+    </div>
+
+    <div class="panel"><div class="panel-head"><h2 class="panel-title">KPI-цели квартала</h2></div>
+      <div style="overflow-x:auto"><table><thead><tr><th class="tl">KPI</th><th>Ед.</th><th class="tr">План Q</th><th class="tr" style="padding-right:1.15rem">Прошлый Q</th></tr></thead>
+        <tbody>${cs.kpiTargets.map(t=>{const money=t.unit==='руб.';const f2=n=>money?fmtM(n):fmtN(n);
+          return `<tr class="hoverable"><td class="tl" style="font-weight:500">${esc(KPI_LABEL[t.kpi_key]||t.kpi_key)}</td><td class="faint">${esc(t.unit)}</td><td class="tr readout">${f2(t.plan_value)}</td><td class="tr readout faint" style="padding-right:1.15rem">${f2(t.prev_q_value)}</td></tr>`;}).join('')}</tbody></table></div>
+    </div>
+  </div>`;
+}
+
+/* --- Сигналы --- */
+function pageSignals(){
+  const s=App.state, sig=s.companies.filter(c=>c.funnel_stage==='new_signal');
+  const fld=(l,v)=>v?`<div class="field-row"><dt>${l}</dt><dd>${esc(v)}</dd></div>`:'';
+  return `<div class="stack">
+    <div class="page-head"><div><div class="eyebrow">Первичный отвес</div><h1>Сигналы</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Очередь новых компаний · ${sig.length} ждут решения</p></div></div>
+    ${sig.length?`<div class="grid g2">${sig.map(c=>`<div class="panel sigcard">
+        <div class="spread" style="margin-bottom:.5rem"><div class="rowflex">${prio(c.priority)}<a href="#/companies/${c.id}" class="link" style="font-weight:600">${esc(c.name)}</a></div><span class="faint" style="font-size:.75rem">${esc(c.segment)} · ${esc(c.geography)}</span></div>
+        <dl style="margin:0 0 1rem">${fld('Почему подходит',c.why_fit)}${fld('Сигнал / наблюдение',c.signal_note)}${fld('Кого искать',c.who_to_find)}</dl>
+        <div class="rowflex" style="margin-top:auto"><button class="btn btn-primary" style="flex:1;justify-content:center" onclick="App.takeToWork('${c.id}')">В работу →</button><button class="btn btn-ghost" onclick="App.rejectSignal('${c.id}')">Не подходит</button></div>
+      </div>`).join('')}</div>`:`<div class="panel"><div style="padding:2.5rem;text-align:center" class="faint">Очередь пуста — все сигналы разобраны</div></div>`}
+  </div>`;
+}
+
+/* --- Компании --- */
+const compFilters={q:'',stage:'all',priority:'all'};
+function pageCompanies(){
+  const s=App.state;
+  const rows=s.companies.filter(c=>{
+    if(compFilters.stage!=='all'&&c.funnel_stage!==compFilters.stage)return false;
+    if(compFilters.priority!=='all'&&c.priority!==compFilters.priority)return false;
+    if(compFilters.q&&!(`${c.name} ${c.segment} ${c.geography}`.toLowerCase().includes(compFilters.q.toLowerCase())))return false;
+    return true;});
+  const stages=['all','new_signal','in_work','touched','met','agreement','revenue','rejected','excluded'];
+  return `<div class="stack">
+    <div class="page-head"><div><div class="eyebrow">База</div><h1>Компании</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">${s.companies.length} компаний · загрузка одной таблицей (компании + контакты)</p></div>
+      <button class="btn btn-brass btn-sm" onclick="document.getElementById('fileExcel').click()">Загрузить Excel</button></div>
+    <div class="rowflex">
+      <input class="field auto" style="width:260px" placeholder="Поиск по названию, сегменту, гео…" value="${esc(compFilters.q)}" oninput="compFilters.q=this.value;renderBody()">
+      <select class="field auto" onchange="compFilters.stage=this.value;renderBody()">${stages.map(x=>`<option value="${x}" ${compFilters.stage===x?'selected':''}>${x==='all'?'Все стадии':STAGE_LABEL[x]}</option>`).join('')}</select>
+      <select class="field auto" onchange="compFilters.priority=this.value;renderBody()">${['all','A','B','C'].map(p=>`<option value="${p}" ${compFilters.priority===p?'selected':''}>${p==='all'?'Все приоритеты':p}</option>`).join('')}</select>
+    </div>
+    <div class="panel"><div style="overflow-x:auto"><table>
+      <thead><tr><th class="tl">№</th><th>Приор.</th><th>Компания</th><th>ЛПР</th><th>Сегмент</th><th>Стадия</th><th style="padding-right:1.15rem">Открытый шаг</th></tr></thead>
+      <tbody>${rows.map(c=>{const ot=openTaskFor(s,c.id);const lprN=s.contacts.filter(k=>k.company_id===c.id&&k.status==='active').length;
+        const step=ot?esc(ot.title):(ACTIVE.includes(c.funnel_stage)?'<span class="c-signal">— без шага</span>':'—');
+        return `<tr class="hoverable"><td class="tl faint readout">${esc(c.ext_no)}</td><td>${prio(c.priority)}</td>
+          <td><a href="#/companies/${c.id}" class="link" style="font-weight:500">${esc(c.name)}</a></td>
+          <td class="readout faint">${lprN}</td><td class="muted">${esc(c.segment)}</td><td>${stageChip(c.funnel_stage)}</td>
+          <td class="muted" style="padding-right:1.15rem">${step}</td></tr>`;}).join('')}</tbody>
+    </table>${rows.length?'':'<div style="padding:2rem;text-align:center" class="faint">Ничего не найдено</div>'}</div></div>
+  </div>`;
+}
+
+/* --- Страница компании --- */
+function pageCompany(id){
+  const s=App.state, c=s.companies.find(x=>x.id===id);
+  if(!c)return `<div class="stack"><p>Компания не найдена.</p><a href="#/companies" class="link" style="text-decoration:underline">← К списку</a></div>`;
+  const contacts=s.contacts.filter(k=>k.company_id===c.id);
+  const tasks=s.tasks.filter(t=>t.company_id===c.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const ot=openTaskFor(s,c.id);
+  const terminal=['rejected','excluded','revenue'].includes(c.funnel_stage);
+  const tab=App.compTab;
+  let actions='';
+  if(!terminal){actions=`<div class="rowflex">${ot?`<button class="btn btn-primary" onclick="ui.complete('${ot.id}')">Завершить: ${esc(ot.title)}</button>`:`<button class="btn btn-signal" onclick="ui.addStep('${c.id}')">+ Назначить следующий шаг</button>`}${c.funnel_stage==='agreement'?`<button class="btn btn-moss" onclick="ui.revenue('${c.id}')">Зафиксировать выручку</button>`:''}</div>`;}
+  const dossierFields=[['Почему подходит',c.why_fit],['Сигнал / наблюдение',c.signal_note],['Релевантная гипотеза',c.relevant_hypothesis_text],['Что проверить / предложить',c.what_to_check],['Кого искать для входа',c.who_to_find],['Расширенный повод',c.extended_reason],['Заготовка 1-го сообщения',c.first_message_template],['Заготовка 2-го сообщения',c.second_message_template]];
+  let bodyHtml='';
+  if(tab==='dossier'){bodyHtml=`<dl class="dossier">${dossierFields.map(([l,v])=>`<div><dt class="eyebrow">${l}</dt><dd style="margin:.25rem 0 0;font-size:.85rem">${esc(v||'—')}</dd></div>`).join('')}</dl>`;}
+  else if(tab==='lpr'){bodyHtml=`<div>${contacts.length?contacts.map(k=>{const stt=contactStats(s,k.id);const ex=k.status==='excluded';
+      return `<div class="lpr ${ex?'excluded':''}"><div class="av">${esc(initials(k.full_name))}</div>
+        <div style="flex:1;min-width:0"><div class="rowflex"><span style="font-weight:600">${esc(k.full_name)}</span>${ex?'<span class="chip chip-ink">исключён</span>':''}</div>
+          <div class="faint" style="font-size:.78rem">${esc(k.position||k.role_target)}</div>
+          <div class="rowflex" style="margin-top:.3rem"><span class="count">касаний ${stt.touches}</span><span class="count">встреч ${stt.meetings}</span>${k.telegram?`<span class="faint readout" style="font-size:.72rem">${esc(k.telegram)}</span>`:''}</div></div>
+        ${!terminal?(ex?`<button class="btn btn-ghost btn-sm" onclick="App.restoreContact('${k.id}')">Вернуть</button>`:`<div class="rowflex"><button class="btn btn-primary btn-sm" onclick="ui.addStep('${c.id}','${k.id}')">Шаг с ним</button><button class="btn btn-ghost btn-sm" style="color:var(--signal)" onclick="ui.excludeContact('${k.id}')">Исключить</button></div>`):''}
+      </div>`;}).join(''):'<div style="padding:1.15rem" class="faint">Нет ЛПР</div>'}</div>`;}
+  else{bodyHtml=`<div>${tasks.length?tasks.map(t=>{const kn=t.contact_id?contactName(s,t.contact_id):null;const h=t.hypothesis_id?hypById(s,t.hypothesis_id):null;
+      return `<div class="spread" style="padding:.75rem 1.15rem;border-bottom:1px solid var(--line)"><div style="min-width:0"><div class="rowflex"><span style="font-weight:500">${esc(t.title)}</span><span class="chip chip-neutral">${TASK_TYPE_META[t.type].label}</span>${statusChip(t.status)}</div>
+          <div class="faint" style="font-size:.75rem;margin-top:3px">${kn?'ЛПР: '+esc(kn):'без ЛПР'}${h?' · '+esc(h.code)+' '+esc(h.title):''}</div>
+          ${t.result_note?`<div class="faint" style="font-size:.75rem;margin-top:2px">↳ ${esc(t.result_note)}</div>`:''}
+          <div class="faint readout" style="font-size:.72rem;margin-top:2px">Создана ${fmtD(t.created_at)}${t.due_at?' · дедлайн '+fmtD(t.due_at):''}${t.completed_at?' · завершена '+fmtD(t.completed_at):''}</div></div>${(t.status==='planned'||t.status==='waiting')?`<button class="btn btn-primary btn-sm" onclick="ui.complete('${t.id}')">Завершить</button>`:''}
+      </div>`;}).join(''):'<div style="padding:1.15rem" class="faint">Действий ещё нет</div>'}</div>`;}
+  const activeLpr=contacts.filter(k=>k.status==='active').length;
+  return `<div class="stack">
+    <a href="#/companies" class="eyebrow link">← Компании</a>
+    <div class="spread" style="align-items:flex-start;flex-wrap:wrap"><div><div class="rowflex">${prio(c.priority)}<h1 class="display" style="font-size:1.6rem;font-weight:700">${esc(c.name)}</h1>${stageChip(c.funnel_stage)}</div>
+        <p class="faint" style="font-size:.85rem;margin:.35rem 0 0">№ ${esc(c.ext_no)} · ${esc(c.segment)} · ${esc(c.category)} · ${esc(c.geography)}</p>
+        ${c.funnel_stage==='revenue'?`<p class="c-moss readout" style="font-weight:600;margin:.35rem 0 0">Выручка: ${fmtM(c.revenue_amount)}</p>`:''}
+        ${c.funnel_stage==='excluded'?`<p class="faint" style="font-size:.85rem;margin:.35rem 0 0">Исключена: ${esc(c.excluded_reason||'—')}</p>`:''}
+      </div>${actions}</div>
+    ${(!terminal&&!ot)?`<div class="warn-banner"><span class="beacon"></span> Компания без следующего шага — она «зависла» и попадает в «Фокус». Назначьте шаг с конкретным ЛПР.</div>`:''}
+    <div class="panel"><div class="tabs">
+        <button class="${tab==='dossier'?'on':''}" onclick="App.setTab('dossier')">Досье</button>
+        <button class="${tab==='lpr'?'on':''}" onclick="App.setTab('lpr')">ЛПР / Аккаунты<span class="cnt">${activeLpr}</span></button>
+        <button class="${tab==='actions'?'on':''}" onclick="App.setTab('actions')">Мои действия<span class="cnt">${tasks.length}</span></button>
+      </div>${bodyHtml}</div>
+  </div>`;
+}
+
+/* --- Контакты --- */
+const contactFilters={q:'',company:'all'};
+function pageContacts(){
+  const s=App.state;
+  const unmatched=s.contacts.filter(k=>k.company_id===null).length;
+  const rows=s.contacts.filter(k=>{
+    if(contactFilters.company==='unmatched'&&k.company_id!==null)return false;
+    if(contactFilters.company!=='all'&&contactFilters.company!=='unmatched'&&k.company_id!==contactFilters.company)return false;
+    if(contactFilters.q&&!(`${k.full_name} ${k.position} ${k.company_name}`.toLowerCase().includes(contactFilters.q.toLowerCase())))return false;
+    return true;});
+  return `<div class="stack">
+    <div class="page-head"><div><div class="eyebrow">ЛПР</div><h1>Контакты</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">${s.contacts.length} контактов${unmatched?` · <span class="c-signal">${unmatched} без матча</span>`:''}</p></div>
+      <button class="btn btn-brass btn-sm" onclick="document.getElementById('fileExcel').click()">Загрузить Excel</button></div>
+    <div class="rowflex">
+      <input class="field auto" style="width:260px" placeholder="Поиск по имени, должности…" value="${esc(contactFilters.q)}" oninput="contactFilters.q=this.value;renderBody()">
+      <select class="field auto" onchange="contactFilters.company=this.value;renderBody()"><option value="all">Все компании</option>${s.companies.map(c=>`<option value="${c.id}" ${contactFilters.company===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}${unmatched?`<option value="unmatched" ${contactFilters.company==='unmatched'?'selected':''}>⚠ Без матча (${unmatched})</option>`:''}</select>
+    </div>
+    <div class="panel"><div style="overflow-x:auto"><table>
+      <thead><tr><th class="tl">Имя</th><th>Должность</th><th>Компания</th><th class="tr">Касаний</th><th class="tr">Встреч</th><th>Статус</th><th style="padding-right:1.15rem">Уверенность</th></tr></thead>
+      <tbody>${rows.map(k=>{const stt=contactStats(s,k.id);
+        return `<tr class="hoverable" style="${k.company_id===null?'background:rgba(246,221,211,.4)':''}${k.status==='excluded'?';opacity:.6':''}">
+        <td class="tl" style="font-weight:500">${esc(k.full_name)}</td><td class="muted">${esc(k.position||k.role_target)}</td>
+        <td>${k.company_id?`<a href="#/companies/${k.company_id}" class="link">${esc(k.company_name)}</a>`:`<span class="c-signal">⚠ ${esc(k.company_name)} (не найдена)</span>`}</td>
+        <td class="tr readout">${stt.touches}</td><td class="tr readout">${stt.meetings}</td>
+        <td>${k.status==='excluded'?'<span class="chip chip-ink">исключён</span>':'<span class="chip chip-mosssoft">активен</span>'}</td>
+        <td class="muted" style="padding-right:1.15rem">${esc(k.confidence)}</td></tr>`;}).join('')}</tbody>
+    </table>${rows.length?'':'<div style="padding:2rem;text-align:center" class="faint">Ничего не найдено</div>'}</div></div>
+  </div>`;
+}
+
+/* --- Задачи --- */
+const taskFilters={status:'open',type:'all',company:'all',hyp:'all'};
+function pageTasks(){
+  const s=App.state, now=NOW.getTime();
+  if(taskFilters.status==='stalled'){
+    const items=focus(s).filter(x=>x.stalled);
+    return `<div class="stack">
+      <div class="page-head"><div><div class="eyebrow c-signal">Вернуть фокус</div><h1>Без следующего шага</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Активные компании без открытой задачи или с просрочкой · ${items.length}</p></div>
+        <select class="field auto" onchange="taskFilters.status=this.value;renderBody()"><option value="stalled" selected>Без шага / просрочка</option><option value="open">Открытые</option><option value="all">Все задачи</option></select></div>
+      <div class="panel"><div>${items.length?items.map(x=>{const kn=x.openTask&&x.openTask.contact_id?contactName(s,x.openTask.contact_id):null;
+        return `<div class="spread" style="padding:.85rem 1.15rem;border-bottom:1px solid var(--line)"><div><div class="rowflex"><a href="#/companies/${x.company.id}" class="link" style="font-weight:600">${esc(x.company.name)}</a>${stageChip(x.company.funnel_stage)}<span class="chip chip-signal"><span class="beacon"></span>${x.overdue?'просрочка':'без шага'}</span></div>
+          <div class="faint" style="font-size:.75rem;margin-top:2px">${x.openTask?('Открытый шаг: '+esc(x.openTask.title)+(kn?' · '+esc(kn):'')):'Нет открытого шага'} · простой ${x.idleDays} дн.</div></div>
+          ${x.openTask?`<button class="btn btn-primary btn-sm" onclick="ui.complete('${x.openTask.id}')">Завершить шаг</button>`:`<button class="btn btn-signal btn-sm" onclick="ui.addStep('${x.company.id}')">Назначить шаг</button>`}
+        </div>`;}).join(''):'<div style="padding:2rem;text-align:center" class="faint">Все активные компании имеют следующий шаг 🎉</div>'}</div></div>
+    </div>`;
+  }
+  const rows=s.tasks.filter(t=>{
+    if(taskFilters.status==='open'&&!(t.status==='planned'||t.status==='waiting'))return false;
+    if(taskFilters.status!=='all'&&taskFilters.status!=='open'&&t.status!==taskFilters.status)return false;
+    if(taskFilters.type!=='all'&&t.type!==taskFilters.type)return false;
+    if(taskFilters.company!=='all'&&t.company_id!==taskFilters.company)return false;
+    if(taskFilters.hyp!=='all'&&t.hypothesis_id!==taskFilters.hyp)return false;
+    return true;}).sort((a,b)=>{const ao=(a.status==='planned'||a.status==='waiting')?0:1,bo=(b.status==='planned'||b.status==='waiting')?0:1;return ao!==bo?ao-bo:new Date(b.created_at)-new Date(a.created_at);});
+  const opt=(v,l,cur)=>`<option value="${v}" ${cur===v?'selected':''}>${l}</option>`;
+  return `<div class="stack">
+    <div class="page-head"><div><div class="eyebrow">Трекер</div><h1>Задачи</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Каждая задача = компания + ЛПР + гипотеза → автотрекинг</p></div></div>
+    <div class="rowflex">
+      <select class="field auto" onchange="taskFilters.status=this.value;renderBody()">${opt('open','Открытые',taskFilters.status)}${opt('stalled','Без шага / просрочка',taskFilters.status)}${opt('all','Все статусы',taskFilters.status)}${opt('planned','Запланированные',taskFilters.status)}${opt('waiting','Ждут ответа',taskFilters.status)}${opt('done','Завершённые',taskFilters.status)}${opt('cancelled','Отменённые',taskFilters.status)}</select>
+      <select class="field auto" onchange="taskFilters.type=this.value;renderBody()"><option value="all">Все типы</option>${Object.keys(TASK_TYPE_META).map(t=>`<option value="${t}" ${taskFilters.type===t?'selected':''}>${TASK_TYPE_META[t].label}</option>`).join('')}</select>
+      <select class="field auto" onchange="taskFilters.hyp=this.value;renderBody()"><option value="all">Все гипотезы</option>${CS(s).hypotheses.map(h=>`<option value="${h.id}" ${taskFilters.hyp===h.id?'selected':''}>${esc(h.code)} · ${esc(h.title)}</option>`).join('')}</select>
+      <select class="field auto" onchange="taskFilters.company=this.value;renderBody()"><option value="all">Все компании</option>${s.companies.map(c=>`<option value="${c.id}" ${taskFilters.company===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+    </div>
+    <div class="panel"><div style="overflow-x:auto"><table>
+      <thead><tr><th class="tl">Задача</th><th>Тип</th><th>Компания</th><th>ЛПР</th><th>Гип.</th><th>Статус</th><th>Дедлайн</th><th style="padding-right:1.15rem"></th></tr></thead>
+      <tbody>${rows.map(t=>{const overdue=t.due_at&&(t.status==='planned'||t.status==='waiting')&&new Date(t.due_at).getTime()<now;const kn=t.contact_id?contactName(s,t.contact_id):null;const h=t.hypothesis_id?hypById(s,t.hypothesis_id):null;
+        return `<tr class="hoverable"><td class="tl"><span style="font-weight:500">${esc(t.title)}</span>${t.is_next_step?'<span class="eyebrow c-brass" style="margin-left:.4rem">шаг</span>':''}</td>
+          <td class="muted">${TASK_TYPE_META[t.type].label}</td><td><a href="#/companies/${t.company_id}" class="link">${esc(companyName(s,t.company_id))}</a></td>
+          <td class="muted">${kn?esc(kn):'—'}</td><td>${h?`<span class="chip chip-teal">${esc(h.code)}</span>`:'<span class="faint">—</span>'}</td><td>${statusChip(t.status)}</td>
+          <td class="readout ${overdue?'c-signal':'muted'}" style="font-size:.78rem${overdue?';font-weight:600':''}">${overdue?'⚠ ':''}${fmtD(t.due_at)}</td>
+          <td class="tr" style="padding-right:1.15rem">${(t.status==='planned'||t.status==='waiting')?`<button class="btn btn-primary btn-sm" onclick="ui.complete('${t.id}')">Завершить</button>`:''}</td></tr>`;}).join('')}</tbody>
+    </table>${rows.length?'':'<div style="padding:2rem;text-align:center" class="faint">Нет задач по фильтру</div>'}</div></div>
+  </div>`;
+}
+
+/* --- Гипотезы --- */
+function pageHypotheses(){
+  const s=App.state, cs=CS(s);
+  return `<div class="stack">
+    <div class="page-head"><div><div class="eyebrow c-teal">Плоскость измерения · ${esc(cs.name)}</div><h1>Гипотезы</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Гипотеза → задачи → подзадачи · факт tracked-задач считается автоматически</p></div>
+      <button class="btn btn-brass" onclick="ui.addHyp()">+ Гипотеза</button></div>
+    <div class="stack">${cs.hypotheses.map(h=>{
+      const p=Math.round(hypProgress(s,h)*100);
+      const ts=cs.hypTasks.filter(t=>t.hypothesis_id===h.id);
+      const collapsed=!!App.collapsedHyps[h.id];
+      const head=`<div class="hyp-head">
+          <div class="rowflex" style="align-items:center"><span class="exp" onclick="App.toggleHypCollapse('${h.id}')">${collapsed?'▸':'▾'}</span><span class="readout" style="font-size:1.1rem;font-weight:700;color:var(--teal)">${esc(h.code)}</span></div>
+          <div><h3 class="display" style="font-weight:600;font-size:1.05rem;cursor:pointer" onclick="App.toggleHypCollapse('${h.id}')">${esc(h.title)}</h3>${collapsed?'':`<div class="smart">SMART: ${esc(h.smart||'—')}</div>`}</div>
+          <div style="text-align:right;min-width:160px">
+            <div class="rowflex" style="justify-content:flex-end;margin-bottom:.4rem"><select class="field auto sm" onchange="App.setHypStatus('${h.id}',this.value)">${HYP_STATUS.map(st=>`<option value="${st}" ${h.status===st?'selected':''}>${HYP_STATUS_LABEL[st]}</option>`).join('')}</select>${prioFull(h.priority)}</div>
+            <div class="eyebrow">Цель · ${esc(h.unit)}: <b class="readout" style="color:var(--ink)">${h.plan}</b></div>
+            <div class="rowflex" style="justify-content:flex-end;margin-top:.5rem"><span class="readout c-teal" style="font-size:1.3rem;font-weight:700">${p}%</span><button class="btn btn-ghost btn-xs" onclick="App.toggleHypCollapse('${h.id}')">${collapsed?'Развернуть':'Свернуть'}</button><button class="btn btn-ghost btn-xs" style="color:var(--signal)" onclick="App.deleteHyp('${h.id}')">Удалить</button></div>
+          </div></div>`;
+      if(collapsed)return `<div class="panel" style="overflow:hidden">${head}</div>`;
+      const body=`<div class="bar" style="border-radius:0"><i style="width:${p}%"></i></div>
+        <div style="overflow-x:auto"><table>
+          <thead><tr><th class="tl">Задача гипотезы</th><th>Статус</th><th>Ед.</th><th class="tr">План</th><th class="tr">Факт</th><th class="tr">Прогресс</th><th>Приоритет</th><th style="padding-right:1.15rem"></th></tr></thead>
+          <tbody>${ts.map(t=>{const fact=htFact(s,t);const pl=htPlan(s,t);const eff=htStatusEffective(s,t);const pct=pl>0?Math.min(100,Math.round(fact/pl*100)):0;const expanded=!!App.expandedHt[t.id];
+            const factCell=t.mode==='tracked'?`<span class="readout" style="font-weight:600">${fact}</span> <span class="tag-auto">авто</span>`:`<span class="readout" style="font-weight:600">${fact}</span> <span class="faint readout" style="font-size:.72rem">/ ${htSubs(s,t).length}</span>`;
+            let row=`<tr class="hoverable"><td class="tl"><span class="exp" onclick="App.toggleHt('${t.id}')">${expanded?'▾':'▸'}</span><span style="font-weight:500;cursor:pointer" onclick="App.toggleHt('${t.id}')">${esc(t.title)}</span></td>
+              <td><span class="chip ${HT_STATUS_CHIP[eff]}">${HT_STATUS_LABEL[eff]}</span></td><td class="faint readout">${esc(t.unit)}</td><td class="tr readout">${pl}</td><td class="tr">${factCell}</td>
+              <td class="tr" style="min-width:96px"><div class="rowflex" style="justify-content:flex-end;gap:.4rem"><div class="bar" style="width:52px"><i style="width:${pct}%"></i></div><span class="readout faint" style="font-size:.72rem">${pct}%</span></div></td>
+              <td>${prioFull(t.priority)}</td><td class="tr" style="padding-right:1.15rem"><span class="exp" style="color:var(--signal)" title="Удалить задачу" onclick="App.deleteHypTask('${t.id}')">✕</span></td></tr>`;
+            if(expanded){let inner;
+              if(t.mode==='tracked'){const csx=htContrib(s,t);inner=csx.length?csx.map(x=>`<div class="contrib"><b>✓</b> ${esc(x.title)} · ${esc(companyName(s,x.company_id))}${x.contact_id?' · '+esc(contactName(s,x.contact_id)||''):''} · ${fmtD(x.completed_at)}</div>`).join(''):'<span class="faint" style="font-size:.78rem">Пока нет засчитанных действий. Завершайте касания/встречи с привязкой к этой задаче — факт наберётся сам.</span>';}
+              else{const subs=htSubs(s,t);inner=`<div class="subwrap">${subs.map(x=>`<span class="subchip ${x.is_done?'done':''}"><span onclick="App.toggleSubtask('${x.id}')" style="cursor:pointer">${x.is_done?'☑':'☐'} ${esc(x.title)}</span><span class="del" onclick="App.deleteSubtask('${x.id}')" style="cursor:pointer">✕</span></span>`).join('')}<button class="tinyadd" onclick="ui.addSub('${t.id}')">+ Подзадача</button></div>`;}
+              row+=`<tr class="subrow"><td colspan="8">${inner}</td></tr>`;}
+            return row;}).join('')}
+            <tr><td colspan="8" class="tl" style="padding-top:.6rem;padding-bottom:.9rem"><button class="tinyadd" onclick="ui.addTask('${h.id}')">+ Задача гипотезы</button></td></tr>
+          </tbody></table></div>`;
+      return `<div class="panel" style="overflow:hidden">${head}${body}</div>`;
+    }).join('')||'<div class="panel"><div style="padding:2rem;text-align:center" class="faint">В этой стратегии пока нет гипотез. Нажмите «+ Гипотеза» или загрузите стратегию.</div></div>'}</div>
+  </div>`;
+}
+
+/* ============================ МОДАЛКИ ============================ */
+function optContacts(companyId,sel){const s=App.state;const list=s.contacts.filter(k=>k.company_id===companyId&&k.status==='active');
+  return `<option value="">— выбрать ЛПР —</option>`+list.map(k=>`<option value="${k.id}" ${sel===k.id?'selected':''}>${esc(k.full_name)} · ${esc(k.position||k.role_target)}</option>`).join('');}
+function optHyps(sel){const s=App.state;return `<option value="">— без гипотезы —</option>`+CS(s).hypotheses.map(h=>`<option value="${h.id}" ${sel===h.id?'selected':''}>${esc(h.code)} · ${esc(h.title)}</option>`).join('');}
+function optHypTasks(hypId,sel){const s=App.state;if(!hypId)return `<option value="">— сначала выберите гипотезу —</option>`;
+  const list=allHtasks(s).filter(t=>t.hypothesis_id===hypId);return `<option value="">— задача гипотезы (необязательно) —</option>`+list.map(t=>`<option value="${t.id}" ${sel===t.id?'selected':''}>${esc(t.title)}</option>`).join('');}
+function stepFields(prefix,companyId,presetContact){
+  const typeOpts=NEXT_STEP_TYPES.map(x=>`<option value="${x}">${TASK_TYPE_META[x].label}${TASK_TYPE_META[x].metric?' · +1 к метрике':''}</option>`).join('');
+  return `<div><label class="lbl eyebrow">Название шага</label><input id="${prefix}-title" class="field" placeholder="Что именно делаем"></div>
+    <div class="grid g2 mrow"><div><label class="lbl eyebrow">Тип шага</label><select id="${prefix}-type" class="field">${typeOpts}</select></div><div><label class="lbl eyebrow">ЛПР (с кем идём)</label><select id="${prefix}-contact" class="field">${optContacts(companyId,presetContact)}</select></div></div>
+    <div class="grid g2 mrow"><div><label class="lbl eyebrow">Гипотеза</label><select id="${prefix}-hyp" class="field" onchange="ui._fillHT('${prefix}',this.value)">${optHyps('')}</select></div><div><label class="lbl eyebrow">Задача гипотезы</label><select id="${prefix}-htask" class="field">${optHypTasks('','')}</select></div></div>
+    <div class="grid g2 mrow"><div><label class="lbl eyebrow">Дедлайн</label><input id="${prefix}-due" type="date" class="field"></div><div></div></div>`;
+}
+const ui={
+  _fillHT(prefix,hypId){document.getElementById(prefix+'-htask').innerHTML=optHypTasks(hypId,'');},
+  _readStep(prefix){return {type:document.getElementById(prefix+'-type').value,contactId:document.getElementById(prefix+'-contact').value||null,hypId:document.getElementById(prefix+'-hyp').value||null,hypTaskId:document.getElementById(prefix+'-htask').value||null,title:document.getElementById(prefix+'-title').value,due:(v=>v?new Date(v).toISOString():null)(document.getElementById(prefix+'-due').value)};},
+  complete(taskId){const s=App.state,t=s.tasks.find(x=>x.id===taskId); if(!t)return;const hasContact=!!t.contact_id;const kn=hasContact?contactName(s,t.contact_id):null;
+    App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Завершить: ${esc(t.title)}</h3><button class="x" title="Закрыть без шага" onclick="App.dismiss()">✕</button></div>
+      <div><div><label class="lbl eyebrow">Результат</label><textarea id="m-note" class="field" rows="2" placeholder="«Хорошо пообщались, запросили КП»…"></textarea></div>
+        <div class="seg mrow"><button id="seg-next" class="on next" onclick="ui._mode('next')">Назначить следующий шаг</button><button id="seg-exc" onclick="ui._mode('exclude')">${hasContact?'Исключить ЛПР':'Исключить компанию'}</button></div>
+        <div id="m-next" class="mrow">${stepFields('m',t.company_id,t.contact_id)}</div>
+        <div id="m-exc" style="display:none" class="mrow"><label class="lbl eyebrow">${hasContact?('Причина исключить ЛПР'+(kn?' · '+esc(kn):'')):'Причина исключить компанию'}</label><input id="m-reason" class="field" placeholder="Не наш профиль / нет бюджета…"></div>
+        <div class="faint" style="font-size:.72rem;margin-top:.8rem">Закроете крестиком без шага — компания останется «без следующего шага» и всплывёт в «Фокусе».</div></div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.cancelModal()">Отмена</button><button id="m-submit" class="btn btn-primary" onclick="ui._submitComplete('${taskId}')">Завершить и назначить шаг</button></div>
+    </div>`, ()=>ui._completeNoStep(taskId));},
+  _completeNoStep(taskId){const el=document.getElementById('m-note');const note=el?el.value:'';App.completeTask(taskId,note);App.closeModal();},
+  _mode(m){document.getElementById('seg-next').classList.toggle('on',m==='next');document.getElementById('seg-exc').classList.toggle('on',m==='exclude');document.getElementById('m-next').style.display=m==='next'?'':'none';document.getElementById('m-exc').style.display=m==='exclude'?'':'none';const b=document.getElementById('m-submit');b.textContent=m==='exclude'?'Завершить и исключить':'Завершить и назначить шаг';b.className='btn '+(m==='exclude'?'btn-signal':'btn-primary');ui._m=m;},
+  _submitComplete(taskId){const s=App.state,t=s.tasks.find(x=>x.id===taskId);const note=document.getElementById('m-note').value;App._onDismiss=null;
+    if(ui._m==='exclude'){const reason=document.getElementById('m-reason').value;App.completeTask(taskId,note);if(t.contact_id)App.excludeContact(t.contact_id,reason);else App.excludeCompany(t.company_id,reason);}else{App.completeTask(taskId,note,ui._readStep('m'));}App.closeModal();},
+  addStep(cid,presetContact){App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Назначить следующий шаг</h3><button class="x" onclick="App.closeModal()">✕</button></div>${stepFields('s',cid,presetContact||null)}<div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="ui._submitStep('${cid}')">Создать шаг</button></div></div>`);},
+  _submitStep(cid){App.addStep(cid,ui._readStep('s'));App.closeModal();},
+  excludeContact(kid){const s=App.state,k=s.contacts.find(x=>x.id===kid);App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Исключить ЛПР · ${esc(k?k.full_name:'')}</h3><button class="x" onclick="App.closeModal()">✕</button></div><p class="muted" style="font-size:.85rem;margin:0 0 .75rem">Исключается конкретный ЛПР, а не вся компания. Его открытые задачи отменяются.</p><input id="ke-reason" class="field" placeholder="Причина исключения"><div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-signal" onclick="ui._submitExcludeContact('${kid}')">Исключить ЛПР</button></div></div>`);},
+  _submitExcludeContact(kid){App.excludeContact(kid,document.getElementById('ke-reason').value);App.closeModal();},
+  revenue(cid){App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Зафиксировать выручку</h3><button class="x" onclick="App.closeModal()">✕</button></div><p class="muted" style="font-size:.85rem;margin:0 0 .75rem">Оплата переводит компанию в стадию «Выручка».</p><input id="r-amount" type="number" class="field" placeholder="Сумма, руб."><div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-moss" onclick="ui._submitRevenue('${cid}')">Зафиксировать</button></div></div>`);},
+  _submitRevenue(cid){App.recordRevenue(cid,Number(document.getElementById('r-amount').value)||0);App.closeModal();},
+  addHyp(){App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Новая гипотеза</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+      <div><label class="lbl eyebrow">Название (тезис)</label><input id="h-title" class="field" placeholder="«Продукт X понравится сегменту Y»"></div>
+      <div class="mrow"><label class="lbl eyebrow">SMART-цель</label><textarea id="h-smart" class="field" rows="3" placeholder="До DD.MM провести N …, конверсия ≥ …"></textarea></div>
+      <div class="grid g3 mrow"><div><label class="lbl eyebrow">Ед. цели</label><input id="h-unit" class="field" placeholder="Замеры / Пилоты"></div><div><label class="lbl eyebrow">План</label><input id="h-plan" type="number" class="field" value="3"></div><div><label class="lbl eyebrow">Приоритет</label><select id="h-prio" class="field"><option value="A">A · Высокий</option><option value="B" selected>B · Средний</option><option value="C">C · Низкий</option></select></div></div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-brass" onclick="ui._submitHyp()">Создать</button></div></div>`);},
+  _submitHyp(){const t=document.getElementById('h-title').value;if(!t)return;App.addHypothesis({title:t,smart:document.getElementById('h-smart').value,unit:document.getElementById('h-unit').value,plan:document.getElementById('h-plan').value,priority:document.getElementById('h-prio').value});App.closeModal();},
+  addTask(hypId){App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Новая задача гипотезы</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+      <div><label class="lbl eyebrow">Название задачи</label><input id="ht-title" class="field" placeholder="Напр. «Собрать 5 встреч»"></div>
+      <div class="grid g3 mrow"><div><label class="lbl eyebrow">Ед.</label><input id="ht-unit" class="field" value="КЕ"></div><div><label class="lbl eyebrow">План</label><input id="ht-plan" type="number" class="field" value="1"></div><div><label class="lbl eyebrow">Приоритет</label><select id="ht-prio" class="field"><option value="A">A · Высокий</option><option value="B" selected>B · Средний</option><option value="C">C · Низкий</option></select></div></div>
+      <div class="faint" style="font-size:.72rem;margin-top:.6rem">Задача будет ручной (с подзадачами). Факт = число отмеченных подзадач.</div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-brass" onclick="ui._submitTask('${hypId}')">Создать задачу</button></div></div>`);},
+  _submitTask(hypId){const t=document.getElementById('ht-title').value;if(!t)return;App.addHypTask(hypId,{title:t,unit:document.getElementById('ht-unit').value,plan:document.getElementById('ht-plan').value,priority:document.getElementById('ht-prio').value});App.closeModal();},
+  addSub(htid){App.openModal(`<div class="panel modal" style="max-width:460px"><div class="modal-head"><h3>Новая подзадача</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+      <div><label class="lbl eyebrow">Название подзадачи</label><input id="sb-title" class="field" placeholder="Напр. «Касание 1»"></div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-brass" onclick="ui._submitSub('${htid}')">Добавить</button></div></div>`);
+    setTimeout(()=>{const el=document.getElementById('sb-title');if(el)el.focus();},30);},
+  _submitSub(htid){const t=document.getElementById('sb-title').value;if(!t)return;App.addSubtask(htid,t);App.closeModal();}
+};
+
+/* ============================ РОУТЕР ============================ */
+function bodyHtml(){
+  const h=location.hash||'#/';
+  if(h==='#/'||h==='')return pageDashboard();
+  if(h==='#/strategy')return pageStrategy();
+  if(h==='#/hypotheses')return pageHypotheses();
+  if(h==='#/signals')return pageSignals();
+  if(h==='#/companies')return pageCompanies();
+  if(h.startsWith('#/companies/'))return pageCompany(h.split('/')[2]);
+  if(h==='#/contacts')return pageContacts();
+  if(h==='#/tasks')return pageTasks();
+  return pageDashboard();
+}
+function renderBody(){document.getElementById('page-body').innerHTML=bodyHtml();}
+function render(){document.getElementById('app').innerHTML=`<div class="app">${sidebar()}<main class="main"><div class="main-inner" id="page-body">${bodyHtml()}</div></main></div>`;}
+function renderModal(){document.getElementById('modal-root').innerHTML=App.modal?`<div class="overlay" onclick="if(event.target===this)App.dismiss()">${App.modal}</div>`:'';}
+window.addEventListener('hashchange',()=>{App.compTab='dossier';const mn=document.querySelector('.main');if(mn)mn.scrollTop=0;render();});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&App.modal)App.dismiss();});
+document.getElementById('fileStrategy').addEventListener('change',function(){if(this.files[0])handleStrategyFile(this.files[0]);this.value='';});
+document.getElementById('fileExcel').addEventListener('change',function(){if(this.files[0])handleExcelFile(this.files[0]);this.value='';});
+render();
+</script>
+</body>
+</html>

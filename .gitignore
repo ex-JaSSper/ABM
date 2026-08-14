@@ -1,0 +1,15 @@
+# зависимости и сборки
+node_modules/
+app/node_modules/
+app/dist/
+app/build/
+web/node_modules/
+
+# системное
+.DS_Store
+Thumbs.db
+*.log
+
+# временное
+*.tmp
+scratchpad/
