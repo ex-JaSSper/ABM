@@ -8,8 +8,17 @@ web/node_modules/
 # системное
 .DS_Store
 Thumbs.db
+.idea/
 *.log
 
 # временное
 *.tmp
 scratchpad/
+
+# локальная тестовая БД SQLite (не коммитим бинарник/тестовые данные)
+local/*.db
+local/*.db-journal
+local/*.sqlite
+local/backups/
+local/design-preview.html
+local/seed-demo.mjs

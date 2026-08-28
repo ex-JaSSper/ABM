@@ -6,21 +6,21 @@
 <title>ABM · движок следующего действия</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --paper:#f6f7f9; --paper-2:#eef0f3; --card:#ffffff; --well:#f3f5f8;
-  --ink:#1f2632; --ink-2:#5c6673; --ink-3:#98a1ad; --line:#edf0f3; --line-2:#e2e6ec;
-  --blueprint:#4b57c6; --blueprint-2:#5a66d6; --blueprint-3:#9aa2ec; --blueprint-wash:#eef0fb;
-  --brass:#c08a3c; --brass-2:#d6a24f; --brass-wash:#f7efe0;
-  --signal:#dd5b46; --signal-wash:#fbe8e3;
-  --teal:#2f938a; --teal-2:#46a89e; --teal-wash:#e6f3f1;
-  --moss:#5f9350; --moss-wash:#ecf3e6;
-  --f-display:'Inter',ui-sans-serif,system-ui,'Segoe UI',sans-serif;
-  --f-sans:'Inter',ui-sans-serif,system-ui,'Segoe UI',sans-serif;
-  --f-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',monospace;
+  --paper:#f5f7f3; --paper-2:#ecefe8; --card:#ffffff; --well:#eff2ea;
+  --ink:#1f2a24; --ink-2:#586158; --ink-3:#8b968c; --line:#e7ebe2; --line-2:#dbe0d4;
+  --blueprint:#3e8062; --blueprint-2:#336a51; --blueprint-3:#9cc2ae; --blueprint-wash:#e9f1ec;
+  --brass:#b0894a; --brass-2:#c39c58; --brass-wash:#f2ecdd;
+  --signal:#c2664e; --signal-wash:#f5e5df;
+  --teal:#3f7d74; --teal-2:#52968c; --teal-wash:#e7f0ee;
+  --moss:#4f8557; --moss-wash:#e9f1e7;
+  --f-display:'Manrope',ui-sans-serif,system-ui,'Segoe UI',sans-serif;
+  --f-sans:'Manrope',ui-sans-serif,system-ui,'Segoe UI',sans-serif;
+  --f-mono:'Manrope',ui-sans-serif,system-ui,'Segoe UI',sans-serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -218,9 +218,9 @@ body{background:var(--paper);letter-spacing:-.005em}
 .eyebrow{font-family:var(--f-sans);font-weight:600;letter-spacing:.1em}
 .sidebar{border-right:1px solid var(--line)}
 .brand-badge{border-radius:11px;box-shadow:0 8px 18px -10px rgba(75,87,198,.55)}
-.nav a{border-radius:10px;padding:.6rem .75rem}
-.nav a.active{background:var(--blueprint-wash);color:var(--blueprint)}
-.nav a.active .ico{opacity:1}
+.nav a{position:relative;border-radius:10px;padding:.6rem .8rem;font-weight:500}
+.nav a.active{background:var(--blueprint-wash);color:var(--blueprint);font-weight:600}
+.nav a.active::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--blueprint)}
 .nav-badge{border-radius:999px;background:var(--blueprint-wash);color:var(--blueprint);font-family:var(--f-sans);padding:.1rem .5rem}
 .sidebar-warn{border-radius:10px;background:var(--well);color:var(--ink-3);border:1px solid var(--line)}
 .sidebar-warn:hover{background:var(--paper-2)}
@@ -292,6 +292,26 @@ tbody tr.hoverable:hover{background:var(--well)}
 .xltable{font-size:.8rem;white-space:nowrap}
 .xltable td,.xltable th{border-right:1px solid var(--line)}
 .xltable td:last-child,.xltable th:last-child{border-right:none}
+/* --- Канбан --- */
+.kboard{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;align-items:flex-start}
+.kcol{flex:0 0 244px;background:var(--well);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 190px)}
+.kboard4 .kcol{flex:1 1 0;min-width:220px}
+.kcol.drop{border-color:var(--blueprint);background:var(--blueprint-wash)}
+.kcol-h{display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;font-weight:600;font-size:.82rem}
+.kcol-c{font-family:var(--f-mono);font-size:.72rem;color:var(--ink-3);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.05rem .45rem}
+.kcol-add{display:flex;gap:.35rem;padding:0 .7rem .5rem;flex-wrap:wrap;min-height:1px}
+.kadd{border:1px dashed var(--line-2);background:transparent;color:var(--ink-3);border-radius:8px;padding:.28rem .55rem;font-size:.72rem;cursor:pointer;font-family:var(--f-sans)}
+.kadd:hover{border-color:var(--blueprint);color:var(--blueprint)}
+.kcol-body{padding:0 .6rem .7rem;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.kcard{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:.7rem .75rem;cursor:grab;box-shadow:0 1px 2px rgba(20,30,45,.04)}
+.kcard:active{cursor:grabbing}
+.kcard-co{border-left:3px solid var(--brass)}
+.kcard-t{font-weight:600;font-size:.85rem;line-height:1.25}
+.kcard-s{font-size:.75rem;color:var(--ink-2);margin-top:2px}
+.kcard-m{font-size:.72rem;color:var(--ink-3);margin-top:2px}
+.kempty{color:var(--ink-3);font-size:.75rem;text-align:center;padding:1rem 0}
+.chip-wait{background:var(--brass-wash);color:#8a6a2e}
+.chip-warn2{background:var(--signal-wash);color:#a5432c}
 </style>
 </head>
 <body class="drafting">
@@ -299,7 +319,6 @@ tbody tr.hoverable:hover{background:var(--well)}
 <div id="modal-root"></div>
 <div id="toast-root"></div>
 <div id="sync-ind" class="sync-ind"></div>
-<input type="file" id="fileStrategy" accept=".json" style="display:none">
 <input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" style="display:none">
 
 <script>
@@ -543,14 +562,51 @@ function kpiRows(s){
     completion:t.plan_value>0?Math.round(fact/t.plan_value*100):0,delta:fact-t.prev_q_value,prevQ:t.prev_q_value};});
 }
 function openTaskFor(s,cid){return s.tasks.find(t=>t.company_id===cid&&(t.status==='planned'||t.status==='waiting'))||null;}
+// открытый следующий шаг конкретного ЛПР
+function openTaskForContact(s,kid){return s.tasks.find(t=>t.contact_id===kid&&(t.status==='planned'||t.status==='waiting'))||null;}
+
+/* ---- CRM-канбан ---- */
+const CRM_COLS=[
+  {id:'signal',  label:'Сигнал',            type:null},
+  {id:'deferred',label:'Отложенные',        type:'deferred'},
+  {id:'touch1',  label:'Первичное касание', type:'touch_new'},
+  {id:'meeting1',label:'Первичная встреча', type:'meeting_new'},
+  {id:'touch2',  label:'Повторное касание', type:'touch_repeat'},
+  {id:'meeting2',label:'Повторная встреча', type:'meeting_repeat'},
+  {id:'deal',    label:'Договор / пилот',   type:'agreement'},
+  {id:'won',     label:'Сделка',            type:'won'}
+];
+const CRM_COL=id=>CRM_COLS.find(c=>c.id===id);
+// сколько раз ЛПР уже сделал действие данной категории (для индикатора «повтор ×N»)
+function contactActionCount(s,kid,cat){return s.tasks.filter(t=>t.status==='done'&&t.contact_id===kid&&TASK_TYPE_META[t.type]&&TASK_TYPE_META[t.type].cat===cat).length;}
+const CRM_TASK_STAGE={touch_new:'touch1',meeting_new:'meeting1',touch_repeat:'touch2',meeting_repeat:'meeting2',agreement:'deal'};
+// Канбан — источник истины: действие определяется последней завершённой записью,
+// а служебная открытая запись хранит только состояния «Сигнал» и «Отложенные».
+function contactStage(s,k){
+  const marker=s.tasks.filter(t=>t.contact_id===k.id&&(t.status==='planned'||t.status==='waiting')&&t.type==='custom'&&(t.title==='Отложено'||t.title==='Сигнал'))
+    .sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))[0];
+  if(marker)return marker.title==='Отложено'?'deferred':'signal';
+  const last=s.tasks.filter(t=>t.contact_id===k.id&&t.status==='done')
+    .sort((a,b)=>new Date(b.completed_at||b.created_at||0)-new Date(a.completed_at||a.created_at||0))[0];
+  if(last){
+    if(last.type==='custom'&&last.title==='Сделка закрыта')return 'won';
+    if(CRM_TASK_STAGE[last.type])return CRM_TASK_STAGE[last.type];
+  }
+  return CRM_COL(k.crm_stage)?k.crm_stage:'signal';
+}
+const BOARD_COLS=[
+  {id:'new',label:'Новая задача'},
+  {id:'in_work',label:'В работе'},
+  {id:'deferred',label:'Отложено'},
+  {id:'done',label:'Готово'}
+];
 function focus(s){
   const now=NOW.getTime();
   return s.companies.filter(isActive).map(c=>{
-    const ot=openTaskFor(s,c.id);
+    const deferredContacts=s.contacts.filter(k=>k.company_id===c.id&&k.status==='active'&&contactStage(s,k)==='deferred');
     const idle=Math.max(0,Math.floor((now-new Date(c.last_activity_at).getTime())/DAY));
-    const overdue=!!(ot&&ot.due_at)&&new Date(ot.due_at).getTime()<now;
-    const stalled=!ot||overdue;
-    return {company:c,openTask:ot,stalled,overdue,idleDays:idle,priority:(STAGE_WEIGHT[c.funnel_stage]||1)*(idle+1)};
+    const stalled=deferredContacts.length>0;
+    return {company:c,deferredContacts,stalled,idleDays:idle,priority:(STAGE_WEIGHT[c.funnel_stage]||1)*(idle+1)};
   }).sort((a,b)=>a.stalled!==b.stalled?(a.stalled?-1:1):b.priority-a.priority);
 }
 function htContrib(s,ht){return s.tasks.filter(t=>t.status==='done'&&t.hyp_task_id===ht.id&&TASK_TYPE_META[t.type].cat===ht.track);}
@@ -585,7 +641,49 @@ const App={
     const c=s.companies.find(x=>x.id===cid); if(c){c.funnel_stage='in_work';c.last_activity_at=App.nowIso();}
   });},
   rejectSignal(cid){this.set(s=>{const c=s.companies.find(x=>x.id===cid);if(c)c.funnel_stage='rejected';});},
-  deleteAllSignals(){const ids=this.state.companies.filter(c=>c.funnel_stage==='new_signal').map(c=>c.id);if(!ids.length)return;if(!confirm('Удалить все сигналы ('+ids.length+')? Эти компании и их контакты будут удалены безвозвратно.'))return;const set=new Set(ids);this.set(s=>{s.companies=s.companies.filter(c=>!set.has(c.id));s.contacts=s.contacts.filter(k=>!set.has(k.company_id));s.tasks=s.tasks.filter(t=>!set.has(t.company_id));});},
+  addCompany(d){const id=uid();this.set(s=>{s.companies.push({id,ext_no:d.ext_no||null,name:d.name||'Без названия',inn:d.inn||'',priority:d.priority||'B',segment:d.segment||'',category:d.category||'',geography:d.geography||'',why_fit:d.why_fit||'',signal_note:d.signal_note||'',relevant_hypothesis_text:'',what_to_check:'',who_to_find:d.who_to_find||'',extended_reason:'',first_message_template:'',second_message_template:'',funnel_stage:'new_signal',is_excluded:false,excluded_reason:'',revenue_amount:0,created_at:App.nowIso(),last_activity_at:App.nowIso()});});return id;},
+  addContact(d){const comp=d.companyId?this.state.companies.find(c=>c.id===d.companyId):null;const id=uid();this.set(s=>{s.contacts.push({id,company_id:d.companyId||null,ext_company_no:comp?(comp.ext_no||''):'',company_name:comp?comp.name:(d.company_name||''),priority:'',segment:comp?comp.segment:'',role_target:d.role_target||'ЛПР',contact_no:'',full_name:d.full_name||'',position:d.position||'',phone:d.phone||'',email:d.email||'',telegram:d.telegram||'',tenchat:'',network:'',linkedin:'',other_social:'',source:d.source||'вручную',last_digital_trace:'',last_trace_date:'',check_date:'',confidence:d.confidence||'',comment:d.comment||'',how_to_get:'',status:'active',excluded_reason:'',crm_stage:d.crm_stage||null});});return id;},
+  crmMove(d){this.set(s=>{
+    const col=CRM_COL(d.colId); const k=s.contacts.find(x=>x.id===d.contactId); if(!k)return;
+    const c=s.companies.find(x=>x.id===(d.companyId||k.company_id));
+    const openTasks=s.tasks.filter(t=>t.contact_id===k.id&&(t.status==='planned'||t.status==='waiting'));
+    const openT=openTasks.find(t=>t.type===col.type);
+    if(col.type&&col.type!=='won'&&col.type!=='deferred'){
+      const meta=TASK_TYPE_META[col.type];
+      openTasks.forEach(t=>{if(t!==openT)t.status='cancelled';});
+      if(openT){openT.status='done';openT.result_note=d.note||openT.result_note;openT.completed_at=App.nowIso();openT.is_next_step=false;if(d.hypId)openT.hypothesis_id=d.hypId;if(d.hypTaskId)openT.hyp_task_id=d.hypTaskId;}
+      else{s.tasks.push({id:uid(),company_id:c?c.id:k.company_id,contact_id:k.id,hypothesis_id:d.hypId||null,hyp_task_id:d.hypTaskId||null,title:meta.label,description:'',type:col.type,status:'done',result_note:d.note||'',is_next_step:false,due_at:null,created_at:App.nowIso(),completed_at:App.nowIso(),cycle:0});}
+      k.crm_stage=d.colId; if(c){c.funnel_stage=nextStage(c.funnel_stage,meta.stage);c.last_activity_at=App.nowIso();}
+    } else if(col.type==='won'){
+      openTasks.forEach(t=>t.status='cancelled');
+      s.tasks.push({id:uid(),company_id:c?c.id:k.company_id,contact_id:k.id,hypothesis_id:d.hypId||null,hyp_task_id:d.hypTaskId||null,title:'Сделка закрыта',description:'',type:'custom',status:'done',result_note:d.note||'',is_next_step:false,due_at:null,created_at:App.nowIso(),completed_at:App.nowIso(),cycle:0});
+      k.crm_stage='won'; if(c){c.funnel_stage='revenue';c.revenue_amount=Number(d.revenue)||c.revenue_amount||0;c.last_activity_at=App.nowIso();}
+    } else {
+      openTasks.forEach(t=>t.status='cancelled');
+      const deferred=col.id==='deferred';
+      k.crm_stage=deferred?'deferred':'signal';
+      s.tasks.push({id:uid(),company_id:c?c.id:k.company_id,contact_id:k.id,hypothesis_id:null,hyp_task_id:null,title:deferred?'Отложено':'Сигнал',description:'',type:'custom',status:'waiting',result_note:'',is_next_step:false,due_at:null,created_at:App.nowIso(),completed_at:null,cycle:0});
+    }
+  });},
+  addBoardTask(d){this.set(s=>{s.boardTasks.push({id:uid(),strategy_id:CS(s).id,hypothesis_id:d.hypId||null,hyp_task_id:d.hypTaskId||null,title:d.title||'Новая задача',status:'new',due_at:d.due||null,created_at:App.nowIso(),completed_at:null});});},
+  moveBoardTask(id,status){this.set(s=>{const t=s.boardTasks.find(x=>x.id===id);if(t){t.status=status;t.completed_at=(status==='done')?App.nowIso():null;}});},
+  deleteBoardTask(id){this.set(s=>{s.boardTasks=s.boardTasks.filter(x=>x.id!==id);});},
+  updateHyp(id,patch){this.set(s=>{const h=hypById(s,id);if(h)Object.assign(h,patch);});},
+  updateHypTask(id,patch){this.set(s=>{const t=htById(s,id);if(t)Object.assign(t,patch);});},
+  async wipeDatabase(){
+    if(!confirm('Очистить ВСЮ базу? Все стратегии, компании, контакты, задачи и гипотезы будут удалены безвозвратно (база станет пустой).'))return;
+    try{
+      syncBadge('save');
+      for(const t of ['company_task','kpi_target','hyp_subtask','hyp_task','hypothesis','contact','company','strategy']){
+        const r=await sb.from(t).delete().not('id','is',null); if(r.error)throw r.error;
+      }
+      const st=freshStrategy();
+      let r=await sb.from('strategy').upsert([{id:st.id,name:st.name,quarter:st.quarter,description:st.description,expected_effect:st.expected_effect,created_at:st.created_at}]); if(r.error)throw r.error;
+      r=await sb.from('kpi_target').upsert(st.kpiTargets.map(k=>({id:k.id,strategy_id:st.id,kpi_key:k.kpi_key,unit:k.unit,plan_value:0,prev_q_value:0}))); if(r.error)throw r.error;
+      try{localStorage.setItem(CUR,st.id);}catch(e){}
+      syncBadge('ok'); boot();
+    }catch(e){syncBadge('err');toast('Ошибка очистки: '+(e.message||e));}
+  },
   excludeCompany(cid,reason){this.set(s=>{
     const c=s.companies.find(x=>x.id===cid); if(c){c.funnel_stage='excluded';c.is_excluded=true;c.excluded_reason=reason||'Без причины';}
     s.tasks.forEach(t=>{if(t.company_id===cid&&(t.status==='planned'||t.status==='waiting'))t.status='cancelled';});
@@ -619,8 +717,10 @@ const App={
   addHypothesis(d){this.set(s=>{const st=CS(s);const n=st.hypotheses.length+1;
     st.hypotheses.push({id:uid(),code:'Н'+n,title:d.title,smart:d.smart,status:'idea',priority:d.priority||'B',unit:d.unit||'Цель',plan:Number(d.plan)||1,created_at:App.nowIso()});});},
   setStrategyField(patch){this.set(s=>Object.assign(CS(s),patch));},
+  updateKpiTarget(id,patch){this.set(s=>{const kt=CS(s).kpiTargets.find(k=>k.id===id);if(kt)Object.assign(kt,patch);});},
   switchStrategy(id){this.state.currentStrategyId=id;try{localStorage.setItem(CUR,id);}catch(e){}saveCache();render();},
   addStrategy(strat){this.set(s=>{s.strategies.push(strat);s.currentStrategyId=strat.id;});},
+  addStrategyManual(d){const st=freshStrategy();st.name=d.name||'Новая стратегия';st.quarter=d.quarter||'';st.description=d.description||'';st.expected_effect=d.expected_effect||'';this.set(s=>{s.strategies.push(st);s.currentStrategyId=st.id;try{localStorage.setItem(CUR,st.id);}catch(e){}});return st.id;},
 
   go(hash){location.hash=hash;},
   setTab(t){this.compTab=t;renderBody();},
@@ -642,23 +742,38 @@ function fallbackCopy(t){try{const ta=document.createElement('textarea');ta.valu
 function copyData(el){copyText(el.getAttribute('data-copy'));}
 const fmtDshort=iso=>iso?new Date(iso).toLocaleDateString('ru-RU'):'';
 
-/* ============================ ОБЛАКО (Supabase) ============================ */
-const SB_URL='https://ngshfaottebswbllwpka.supabase.co';
-const SB_KEY='sb_publishable_8L6z5qHECbDzjZbPalKPzA_qcd6aRrl';
+/* ============================ ОБЛАКО (Supabase) / ЛОКАЛЬНО (SQLite) ============================ */
+// Локальный режим: открыто с localhost/127.0.0.1 ИЛИ ?local в адресе → пишем в локальную SQLite
+// (node local/server.mjs), прод-Supabase не трогается. Иначе — боевой Supabase.
+const LOCAL_MODE=(location.hostname==='localhost'||location.hostname==='127.0.0.1')||location.search.includes('local');
+const SB_URL=LOCAL_MODE
+  ? (location.origin.startsWith('http')?location.origin:'http://localhost:8787')
+  : 'https://ngshfaottebswbllwpka.supabase.co';
+const SB_KEY=LOCAL_MODE?'local-dev':'sb_publishable_8L6z5qHECbDzjZbPalKPzA_qcd6aRrl';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 const CUR='abm-current-strategy';
 const CACHE='abm-cache-v4';
+const DB_CAPS={board_task:false,inn:false,crm_stage:false,cycle:false};
 
 function emptyStrategy(){return {id:uid(),name:'Новая стратегия',quarter:'',description:'',expected_effect:'',created_at:new Date().toISOString(),kpiTargets:[],hypotheses:[],hypTasks:[],hypSubtasks:[]};}
-function emptyState(){const st=emptyStrategy();return {strategies:[st],currentStrategyId:st.id,companies:[],contacts:[],tasks:[]};}
+function emptyState(){const st=emptyStrategy();return {strategies:[st],currentStrategyId:st.id,companies:[],contacts:[],tasks:[],boardTasks:[]};}
+function freshStrategy(){const st=emptyStrategy();st.kpiTargets=['new_touches','new_meetings','repeat_meetings','agreements','revenue'].map(k=>({id:uid(),kpi_key:k,unit:(k==='revenue'?'руб.':'шт.'),plan_value:0,prev_q_value:0}));return st;}
 function saveCache(){try{localStorage.setItem(CACHE,JSON.stringify(App.state));}catch(e){}}
 
 // ---- сборка вложенного состояния из нормализованных таблиц ----
 async function loadFromCloud(){
   const names=['strategy','kpi_target','hypothesis','hyp_task','hyp_subtask','company','contact','company_task'];
-  const res=await Promise.all(names.map(n=>sb.from(n).select('*')));
+  const [res,board,innProbe,crmProbe,cycleProbe]=await Promise.all([
+    Promise.all(names.map(n=>sb.from(n).select('*'))),
+    sb.from('board_task').select('*'),
+    sb.from('company').select('inn').limit(1),
+    sb.from('contact').select('crm_stage').limit(1),
+    sb.from('company_task').select('cycle').limit(1)
+  ]);
   res.forEach(r=>{if(r.error)throw r.error;});
-  const [str,kpi,hyp,ht,sub,co,ct,ta]=res.map(r=>r.data||[]);
+  DB_CAPS.board_task=!board.error;DB_CAPS.inn=!innProbe.error;DB_CAPS.crm_stage=!crmProbe.error;DB_CAPS.cycle=!cycleProbe.error;
+  applyDbCapabilities();
+  const [str,kpi,hyp,ht,sub,co,ct,ta]=res.map(r=>r.data||[]),bt=DB_CAPS.board_task?(board.data||[]):[];
   const hypStrat={}; hyp.forEach(h=>hypStrat[h.id]=h.strategy_id);
   const taskStrat={}; ht.forEach(t=>taskStrat[t.id]=hypStrat[t.hypothesis_id]);
   const strategies=str.slice().sort((a,b)=>(a.sort_order-b.sort_order)||(new Date(a.created_at)-new Date(b.created_at))).map(s=>({
@@ -669,12 +784,13 @@ async function loadFromCloud(){
     hypSubtasks:sub.filter(x=>taskStrat[x.hyp_task_id]===s.id).map(x=>({id:x.id,hyp_task_id:x.hyp_task_id,title:x.title,is_done:!!x.is_done})),
   }));
   if(!strategies.length)strategies.push(emptyStrategy());
-  const companies=co.map(c=>({...c,revenue_amount:Number(c.revenue_amount||0),is_excluded:!!c.is_excluded}));
-  const contacts=ct.map(k=>({...k}));
-  const tasks=ta.map(t=>({...t,is_next_step:!!t.is_next_step}));
+  const companies=co.map(c=>({...c,revenue_amount:Number(c.revenue_amount||0),is_excluded:!!c.is_excluded,inn:c.inn||''}));
+  const contacts=ct.map(k=>({...k,crm_stage:k.crm_stage||null}));
+  const tasks=ta.map(t=>({...t,is_next_step:!!t.is_next_step,cycle:t.cycle||0}));
+  const boardTasks=bt.map(t=>({...t}));
   let cur=null;try{cur=localStorage.getItem(CUR);}catch(e){}
   if(!cur||!strategies.some(s=>s.id===cur))cur=strategies[0].id;
-  const state={strategies,currentStrategyId:cur,companies,contacts,tasks};
+  const state={strategies,currentStrategyId:cur,companies,contacts,tasks,boardTasks};
   refreshDbIds(state);
   return state;
 }
@@ -688,11 +804,17 @@ const COLS={
   hyp_subtask:['id','hyp_task_id','title','is_done'],
   company:['id','ext_no','name','priority','segment','category','geography','why_fit','signal_note','relevant_hypothesis_text','what_to_check','who_to_find','extended_reason','first_message_template','second_message_template','funnel_stage','is_excluded','excluded_reason','revenue_amount','created_at','last_activity_at'],
   contact:['id','company_id','ext_company_no','company_name','priority','segment','role_target','contact_no','full_name','position','phone','email','telegram','tenchat','network','linkedin','other_social','source','last_digital_trace','last_trace_date','check_date','confidence','comment','how_to_get','status','excluded_reason'],
-  company_task:['id','company_id','contact_id','hypothesis_id','hyp_task_id','title','description','type','status','result_note','is_next_step','due_at','created_at','completed_at']
+  company_task:['id','company_id','contact_id','hypothesis_id','hyp_task_id','title','description','type','status','result_note','is_next_step','due_at','created_at','completed_at'],
+  board_task:['id','strategy_id','hypothesis_id','hyp_task_id','title','status','due_at','created_at','completed_at']
 };
+function applyDbCapabilities(){
+  if(DB_CAPS.inn&&!COLS.company.includes('inn'))COLS.company.splice(3,0,'inn');
+  if(DB_CAPS.crm_stage&&!COLS.contact.includes('crm_stage'))COLS.contact.push('crm_stage');
+  if(DB_CAPS.cycle&&!COLS.company_task.includes('cycle'))COLS.company_task.push('cycle');
+}
 const pick=(o,keys)=>{const r={};keys.forEach(k=>{if(o[k]!==undefined)r[k]=o[k];});return r;};
 function collectRows(s){
-  const R={strategy:[],kpi_target:[],hypothesis:[],hyp_task:[],hyp_subtask:[],company:[],contact:[],company_task:[]};
+  const R={strategy:[],kpi_target:[],hypothesis:[],hyp_task:[],hyp_subtask:[],company:[],contact:[],company_task:[],board_task:[]};
   s.strategies.forEach(st=>{
     R.strategy.push(pick(st,COLS.strategy));
     st.kpiTargets.forEach(k=>R.kpi_target.push(pick({...k,strategy_id:st.id},COLS.kpi_target)));
@@ -703,16 +825,18 @@ function collectRows(s){
   s.companies.forEach(c=>{const r=pick(c,COLS.company);if(r.ext_no==='')r.ext_no=null;R.company.push(r);});
   s.contacts.forEach(k=>R.contact.push(pick(k,COLS.contact)));
   s.tasks.forEach(t=>R.company_task.push(pick(t,COLS.company_task)));
+  if(DB_CAPS.board_task)(s.boardTasks||[]).forEach(t=>R.board_task.push(pick(t,COLS.board_task)));
   return R;
 }
 let _dbIds={};
 function refreshDbIds(s){const R=collectRows(s);_dbIds={};for(const t in R)_dbIds[t]=new Set(R[t].map(x=>x.id));}
 async function pushAll(){
   const R=collectRows(App.state);
-  const upOrder=['strategy','company','hypothesis','contact','hyp_task','hyp_subtask','kpi_target','company_task'];
-  for(const t of upOrder){if(R[t].length){const {error}=await sb.from(t).upsert(R[t]);if(error)throw error;}}
-  const delOrder=['company_task','kpi_target','hyp_subtask','hyp_task','hypothesis','contact','company','strategy'];
+  const upOrder=['strategy','company','hypothesis','contact','hyp_task','hyp_subtask','kpi_target','company_task','board_task'];
+  for(const t of upOrder){if(t==='board_task'&&!DB_CAPS.board_task)continue;if(R[t].length){const {error}=await sb.from(t).upsert(R[t]);if(error)throw error;}}
+  const delOrder=['board_task','company_task','kpi_target','hyp_subtask','hyp_task','hypothesis','contact','company','strategy'];
   for(const t of delOrder){
+    if(t==='board_task'&&!DB_CAPS.board_task)continue;
     const cur=new Set(R[t].map(x=>x.id));const prev=_dbIds[t]||new Set();
     const gone=[...prev].filter(id=>!cur.has(id));
     if(gone.length){const {error}=await sb.from(t).delete().in('id',gone);if(error)throw error;}
@@ -872,7 +996,7 @@ const NAV=[
   {to:'#/',label:'Обзор',ico:'◱',end:true},
   {to:'#/strategy',label:'Стратегия',ico:'❋'},
   {to:'#/hypotheses',label:'Гипотезы',ico:'⚗'},
-  {to:'#/signals',label:'Сигналы',ico:'◎'},
+  {to:'#/crm',label:'CRM',ico:'▤'},
   {to:'#/companies',label:'Компании',ico:'⌂'},
   {to:'#/contacts',label:'Контакты',ico:'☺'},
   {to:'#/tasks',label:'Задачи',ico:'✓'}
@@ -888,27 +1012,23 @@ const companyName=(s,id)=>{const c=s.companies.find(x=>x.id===id);return c?c.nam
 function sidebar(){
   const s=App.state;
   const signals=s.companies.filter(c=>c.funnel_stage==='new_signal').length;
-  const open=s.tasks.filter(t=>t.status==='planned'||t.status==='waiting').length;
-  const stalled=focus(s).filter(f=>f.stalled).length;
-  const badge={'#/signals':signals,'#/tasks':open};
+  const open=(s.boardTasks||[]).filter(t=>t.status!=='done').length;
+  const deferred=s.contacts.filter(k=>k.status==='active'&&contactStage(s,k)==='deferred').length;
+  const badge={'#/crm':deferred,'#/tasks':open};
   const cur=location.hash||'#/';
   const items=NAV.map(n=>{
     const active=n.end?(cur==='#/'||cur===''):cur.startsWith(n.to);
     const b=badge[n.to];
-    return `<a href="${n.to}" class="${active?'active':''}"><span class="ico">${n.ico}</span><span class="grow">${n.label}</span>${b?`<span class="nav-badge">${b}</span>`:''}</a>`;
+    return `<a href="${n.to}" class="${active?'active':''}"><span class="grow">${n.label}</span>${b?`<span class="nav-badge">${b}</span>`:''}</a>`;
   }).join('');
   return `<aside class="sidebar">
     <div class="brand"><div class="brand-badge">А</div><div><b>ABM-движок</b><span class="eyebrow">следующего действия</span></div></div>
     <nav class="nav">${items}</nav>
-    <a class="sidebar-warn ${stalled?'on':''}" href="#/tasks" onclick="taskFilters.status='stalled'"><span class="beacon ${stalled?'':'off'}"></span> Без следующего шага: <b style="margin-left:2px">${stalled}</b>${stalled?' →':''}</a>
+    <a class="sidebar-warn ${deferred?'on':''}" href="#/crm"><span class="beacon ${deferred?'':'off'}"></span> Отложенные ЛПР: <b style="margin-left:2px">${deferred}</b>${deferred?' →':''}</a>
     <div class="sidebar-foot">
       <div class="eyebrow" style="margin-bottom:.3rem">Стратегия</div>
       <select class="field sm" onchange="App.switchStrategy(this.value)">${s.strategies.map(st=>`<option value="${st.id}" ${st.id===s.currentStrategyId?'selected':''}>${esc(st.name)}</option>`).join('')}</select>
-      <div class="rowflex" style="gap:6px;margin-top:8px">
-        <button class="btn btn-ghost btn-xs" style="flex:1" onclick="document.getElementById('fileStrategy').click()">Загрузить стратегию</button>
-        <button class="btn btn-ghost btn-xs" style="flex:1" onclick="document.getElementById('fileExcel').click()">Загрузить Excel</button>
-      </div>
-      <div style="margin-top:8px;font-size:.72rem;color:var(--ink-3)"><a href="#/strategy" style="text-decoration:underline">форматы и шаблоны</a> · <a href="#" onclick="App.reset();return false" style="text-decoration:underline">обновить из базы</a></div>
+      <div style="margin-top:8px;font-size:.72rem;color:var(--ink-3)"><a href="#/strategy" style="text-decoration:underline">открыть стратегию</a> · <a href="#" onclick="App.reset();return false" style="text-decoration:underline">обновить</a> · <a href="#" onclick="App.wipeDatabase();return false" style="text-decoration:underline;color:var(--signal)">очистить базу</a></div>
     </div>
   </aside>`;
 }
@@ -918,7 +1038,7 @@ function funnelPanel(s){
   const mode=App.funnelMode;
   const data=mode==='company'?companyFunnel(s):contactFunnel(s);
   const maxF=Math.max(1,...data.map(x=>x.value));
-  const fc=['#c3c8f2','#a3aaec','#7e88e4','#5a66d6','var(--moss)'];
+  const fc=['#d1e2d7','#a9cbb7','#7cae93','#3e8062','#2f6b50'];
   return `<div class="panel">
     <div class="panel-head"><h2 class="panel-title">Воронка · уникальные ${mode==='company'?'компании':'контакты'}</h2>
       <div class="seg seg-mini"><button class="${mode==='company'?'on':''}" onclick="App.setFunnel('company')">Компании</button><button class="${mode==='contact'?'on':''}" onclick="App.setFunnel('contact')">Контакты</button></div></div>
@@ -929,13 +1049,14 @@ function funnelPanel(s){
 function pageDashboard(){
   const s=App.state, m=metrics(s), k=kpiRows(s), f=focus(s), avg=averages(s);
   const signals=s.companies.filter(c=>c.funnel_stage==='new_signal').length;
-  const processed=s.companies.length-signals, stalled=f.filter(x=>x.stalled).length;
-  const openN=s.tasks.filter(t=>t.status==='planned'||t.status==='waiting').length;
+  const processed=s.companies.length-signals;
+  const deferredN=s.contacts.filter(k=>k.status==='active'&&contactStage(s,k)==='deferred').length;
+  const openN=(s.boardTasks||[]).filter(t=>t.status!=='done').length;
   const tiles=`<div class="grid g4">
     ${tile('Сигналы',`${processed} / ещё ${signals}`,'обработано / ждут решения','c-brass',"App.go('#/signals')")}
     ${tile('Новых касаний',fmtN(m.new_touches),'записано в сервисе','c-blueprint')}
-    ${tile('Открытых задач',fmtN(openN),'следующие шаги','c-teal',"App.go('#/tasks')")}
-    ${tile('Без следующего шага',fmtN(stalled),'зависли / просрочка',stalled?'c-signal':'c-ink3',"taskFilters.status='stalled';App.go('#/tasks')")}
+    ${tile('Открытых задач',fmtN(openN),'задачи команды','c-teal',"App.go('#/tasks')")}
+    ${tile('Отложенные ЛПР',fmtN(deferredN),'решение пока не принято',deferredN?'c-signal':'c-ink3',"App.go('#/crm')")}
   </div>`;
   const kpiHead='KPI\tЕд.\tПлан\tФакт\tВыполнение %\tΔQ\tПрошлый Q';
   const kpiAll=esc([kpiHead].concat(k.map(r=>[r.label,r.unit,r.plan,r.fact,r.completion,r.delta,r.prevQ].join('\t'))).join('\n'));
@@ -957,16 +1078,16 @@ function pageDashboard(){
   const avgPanel=`<div class="panel"><div class="panel-head"><h2 class="panel-title">Средние — интенсивность</h2></div>
     <div class="metrics">${mCellRaw('Касаний на компанию',fmt1(avg.touchPerCompany))}${mCellRaw('Встреч на компанию',fmt1(avg.meetPerCompany))}${mCellRaw('Касаний на ЛПР',fmt1(avg.touchPerContact))}${mCellRaw('Встреч на ЛПР',fmt1(avg.meetPerContact))}</div></div>`;
   const focusPanel=`<div class="panel">
-    <div class="panel-head"><h2 class="panel-title">⊙ Фокус — с кем работать сейчас</h2><span class="eyebrow">${f.length} активных</span></div>
+    <div class="panel-head"><h2 class="panel-title">Фокус — с кем работать сейчас</h2><span class="eyebrow">${f.length} активных</span></div>
     <div class="focus-body">${f.length?'<div class="focus-rail"></div>':''}
-      ${f.length?f.map(x=>{const kn=x.openTask&&x.openTask.contact_id?contactName(s,x.openTask.contact_id):null;
-        const btn=x.openTask?`<button class="btn btn-primary btn-sm" onclick="ui.complete('${x.openTask.id}')">Завершить шаг</button>`:`<button class="btn btn-signal btn-sm" onclick="App.go('#/companies/${x.company.id}')">Назначить шаг</button>`;
+      ${f.length?f.map(x=>{const deferredNames=x.deferredContacts.map(k=>k.full_name).join(', ');
+        const btn=`<button class="btn ${x.stalled?'btn-signal':'btn-ghost'} btn-sm" onclick="App.go('#/crm')">Открыть CRM</button>`;
         return `<div class="focus-item"><span class="focus-node"></span><div style="flex:1;min-width:0">
-            <div class="rowflex"><a href="#/companies/${x.company.id}" class="link" style="font-weight:600">${esc(x.company.name)}</a>${stageChip(x.company.funnel_stage)}${x.stalled?`<span class="chip chip-signal"><span class="beacon"></span>${x.overdue?'просрочка':'без шага'}</span>`:''}</div>
-            <div class="faint" style="font-size:.75rem;margin-top:2px">${x.openTask?('Шаг: '+esc(x.openTask.title)+(kn?' · ЛПР: '+esc(kn):'')):'Нет следующего шага'} · простой ${x.idleDays} дн.</div>
+            <div class="rowflex"><a href="#/companies/${x.company.id}" class="link" style="font-weight:600">${esc(x.company.name)}</a>${stageChip(x.company.funnel_stage)}${x.stalled?`<span class="chip chip-signal"><span class="beacon"></span>отложено: ${x.deferredContacts.length}</span>`:''}</div>
+            <div class="faint" style="font-size:.75rem;margin-top:2px">${x.stalled?('Без решения: '+esc(deferredNames)):'Работа ведётся по этапам CRM'} · простой ${x.idleDays} дн.</div>
           </div>${btn}</div>`;}).join(''):'<div style="padding:1.5rem;text-align:center" class="faint">Нет активных компаний</div>'}
     </div></div>`;
-  const hypPanel=`<div class="panel"><div class="panel-head"><h2 class="panel-title">⚗ Гипотезы — план / факт</h2><a href="#/hypotheses" class="eyebrow link">Все →</a></div>
+  const hypPanel=`<div class="panel"><div class="panel-head"><h2 class="panel-title">Гипотезы — план / факт</h2><a href="#/hypotheses" class="eyebrow link">Все →</a></div>
     <div style="padding:1.15rem" class="stack">${CS(s).hypotheses.map(h=>{const p=Math.round(hypProgress(s,h)*100);
       return `<div><div class="spread" style="margin-bottom:.4rem"><span class="rowflex"><span class="readout faint">${esc(h.code)}</span><span style="font-size:.85rem;font-weight:500">${esc(h.title)}</span>${chip(HYP_STATUS_CHIP[h.status],HYP_STATUS_LABEL[h.status])}${prio(h.priority)}</span><span class="readout c-teal" style="font-weight:600;font-size:.8rem">${p}%</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`;
     }).join('')||'<div class="faint" style="font-size:.85rem">Гипотез нет.</div>'}</div></div>`;
@@ -980,12 +1101,13 @@ function mCell(l,v,money){return `<div><div class="m-val">${money?fmtM(v):fmtN(v
 function mCellRaw(l,v){return `<div><div class="m-val">${v}</div><div class="m-lbl">${l}</div></div>`;}
 
 /* --- Стратегия --- */
+function quarterOptions(sel){const o=['<option value="">— выбрать —</option>'];[2025,2026,2027].forEach(y=>[1,2,3,4].forEach(q=>{const v=`${y}-Q${q}`;o.push(`<option value="${v}" ${sel===v?'selected':''}>${v}</option>`);}));return o.join('');}
 function pageStrategy(){
   const s=App.state, cs=CS(s);
   const done=s.companies.filter(c=>c.funnel_stage==='revenue').length;
   return `<div class="stack">
-    <div class="page-head"><div><div class="eyebrow c-brass">Основание кампании</div><h1>Стратегия</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Название, описание и ожидаемый эффект · загрузка стратегий и данных</p></div>
-      <div class="rowflex"><button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileStrategy').click()">Загрузить стратегию (JSON)</button><button class="btn btn-brass btn-sm" onclick="document.getElementById('fileExcel').click()">Загрузить Excel</button></div></div>
+    <div class="page-head"><div><div class="eyebrow c-brass">Основание кампании</div><h1>Стратегия</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Создаётся вручную · здесь же меняются KPI-цели и план квартала</p></div>
+      <button class="btn btn-primary btn-sm" onclick="ui.addStrategy()">+ Новая стратегия</button></div>
 
     <div class="panel" style="padding:1.15rem">
       <div class="spread"><div class="eyebrow">Активная стратегия</div>
@@ -1001,23 +1123,18 @@ function pageStrategy(){
     <div class="panel" style="padding:1.4rem">
       <div class="strat-field" style="margin-top:0"><label class="lbl eyebrow">Название стратегии</label>
         <input class="field" style="font-family:var(--f-display);font-size:1.05rem;font-weight:600" value="${esc(cs.name)}" onchange="App.setStrategyField({name:this.value})"></div>
-      <div class="grid g2" style="margin-top:1.2rem"><div><label class="lbl eyebrow">Квартал</label><input class="field readout" value="${esc(cs.quarter||'')}" onchange="App.setStrategyField({quarter:this.value})"></div></div>
-      <div class="strat-field"><label class="lbl eyebrow">Описание</label><textarea class="field" rows="4" onchange="App.setStrategyField({description:this.value})">${esc(cs.description||'')}</textarea></div>
-      <div class="strat-field"><label class="lbl eyebrow">Ожидаемый эффект</label><textarea class="field" rows="4" onchange="App.setStrategyField({expected_effect:this.value})">${esc(cs.expected_effect||'')}</textarea></div>
+      <div class="grid g2" style="margin-top:1.2rem"><div><label class="lbl eyebrow">Квартал</label><select class="field" onchange="App.setStrategyField({quarter:this.value})">${quarterOptions(cs.quarter||'')}</select></div></div>
+      <div class="strat-field"><label class="lbl eyebrow">Описание</label><textarea class="field" rows="4" placeholder="Опишите стратегию своими словами…" onchange="App.setStrategyField({description:this.value})">${esc(cs.description||'')}</textarea></div>
+      <div class="strat-field"><label class="lbl eyebrow">Ожидаемый эффект</label><textarea class="field" rows="4" placeholder="Что считаем успехом…" onchange="App.setStrategyField({expected_effect:this.value})">${esc(cs.expected_effect||'')}</textarea></div>
       <div class="faint" style="font-size:.75rem;margin-top:1rem">Изменения сохраняются автоматически при выходе из поля.</div>
     </div>
 
-    <div class="panel"><div class="panel-head"><h2 class="panel-title">Форматы загрузки</h2><div class="rowflex"><button class="btn btn-ghost btn-xs" onclick="downloadStrategyTemplate()">Шаблон стратегии (JSON)</button><button class="btn btn-ghost btn-xs" onclick="downloadExcelTemplate()">Шаблон Excel</button></div></div>
-      <div style="padding:1.15rem" class="stack">
-        <div class="info-banner"><b>Стратегия (JSON)</b> — грузит гипотезы, их задачи и подзадачи в отдельную стратегию. Скачайте шаблон, заполните, загрузите. Подзадачи необязательны; для задач с автотрекингом укажите <code>"tracked":"touch"|"meeting"|"agreement"</code>.</div>
-        <div class="info-banner"><b>Excel / CSV</b> — грузит <b>компании и контакты одной таблицей</b> (или двумя листами «Компании» и «Контакты»). Колонки распознаются по названиям из шаблона. Повторная загрузка обновляет по № компании и не плодит дубли. Матч контакт→компания — по «№ компании» или названию.</div>
-      </div>
-    </div>
-
-    <div class="panel"><div class="panel-head"><h2 class="panel-title">KPI-цели квартала</h2></div>
+    <div class="panel"><div class="panel-head"><h2 class="panel-title">KPI-цели квартала</h2><span class="eyebrow">план и прошлый Q — редактируются здесь</span></div>
       <div style="overflow-x:auto"><table><thead><tr><th class="tl">KPI</th><th>Ед.</th><th class="tr">План Q</th><th class="tr" style="padding-right:1.15rem">Прошлый Q</th></tr></thead>
-        <tbody>${cs.kpiTargets.map(t=>{const money=t.unit==='руб.';const f2=n=>money?fmtM(n):fmtN(n);
-          return `<tr class="hoverable"><td class="tl" style="font-weight:500">${esc(KPI_LABEL[t.kpi_key]||t.kpi_key)}</td><td class="faint">${esc(t.unit)}</td><td class="tr readout">${f2(t.plan_value)}</td><td class="tr readout faint" style="padding-right:1.15rem">${f2(t.prev_q_value)}</td></tr>`;}).join('')}</tbody></table></div>
+        <tbody>${cs.kpiTargets.map(t=>`<tr class="hoverable"><td class="tl" style="font-weight:500">${esc(KPI_LABEL[t.kpi_key]||t.kpi_key)}</td><td class="faint">${esc(t.unit)}</td>
+          <td class="tr"><input type="number" class="field" style="width:140px;text-align:right;display:inline-block" value="${t.plan_value}" onchange="App.updateKpiTarget('${t.id}',{plan_value:Number(this.value)||0})"></td>
+          <td class="tr" style="padding-right:1.15rem"><input type="number" class="field" style="width:140px;text-align:right;display:inline-block" value="${t.prev_q_value}" onchange="App.updateKpiTarget('${t.id}',{prev_q_value:Number(this.value)||0})"></td></tr>`).join('')}</tbody></table></div>
+      <div class="faint" style="font-size:.75rem;padding:0 1.15rem 1.1rem">На «Обзоре» эти цели показаны только для чтения — там итоговая статистика (факт).</div>
     </div>
   </div>`;
 }
@@ -1039,7 +1156,7 @@ function pageSignals(){
     <div class="page-head"><div><div class="eyebrow">Первичный отвес</div><h1>Сигналы</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Очередь новых компаний · ${sig.length} ждут решения · клик по карточке — детали</p></div>
       <div class="rowflex">
         <div class="seg seg-mini"><button class="${signalCols===2?'on':''}" onclick="signalCols=2;renderBody()">2 кол.</button><button class="${signalCols===3?'on':''}" onclick="signalCols=3;renderBody()">3 кол.</button></div>
-        ${sig.length?`<button class="btn btn-ghost btn-sm" style="color:var(--signal)" onclick="App.deleteAllSignals()">Удалить все сигналы</button>`:''}
+        <div class="rowflex" style="gap:.5rem;align-items:baseline"><button class="btn btn-primary btn-sm" onclick="document.getElementById('fileExcel').click()">Загрузить Excel</button><a href="#" onclick="downloadExcelTemplate();return false" class="faint" style="font-size:.72rem;text-decoration:underline">шаблон</a></div>
       </div></div>
     ${sig.length?`<div class="grid ${g}">${sig.map(card).join('')}</div>`:`<div class="panel"><div style="padding:2.5rem;text-align:center" class="faint">Очередь пуста — все сигналы разобраны</div></div>`}
   </div>`;
@@ -1056,21 +1173,21 @@ function pageCompanies(){
     return true;});
   const stages=['all','new_signal','in_work','touched','met','agreement','revenue','rejected','excluded'];
   return `<div class="stack">
-    <div class="page-head"><div><div class="eyebrow">База</div><h1>Компании</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">${s.companies.length} компаний · загрузка одной таблицей (компании + контакты)</p></div>
-      <button class="btn btn-brass btn-sm" onclick="document.getElementById('fileExcel').click()">Загрузить Excel</button></div>
+    <div class="page-head"><div><div class="eyebrow">База</div><h1>Компании</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">${s.companies.length} компаний</p></div>
+      <button class="btn btn-primary btn-sm" onclick="ui.addCompany()">+ Компания</button></div>
     <div class="rowflex">
       <input class="field auto" style="width:260px" placeholder="Поиск по названию, сегменту, гео…" value="${esc(compFilters.q)}" oninput="compFilters.q=this.value;renderBody()">
       <select class="field auto" onchange="compFilters.stage=this.value;renderBody()">${stages.map(x=>`<option value="${x}" ${compFilters.stage===x?'selected':''}>${x==='all'?'Все стадии':STAGE_LABEL[x]}</option>`).join('')}</select>
       <select class="field auto" onchange="compFilters.priority=this.value;renderBody()">${['all','A','B','C'].map(p=>`<option value="${p}" ${compFilters.priority===p?'selected':''}>${p==='all'?'Все приоритеты':p}</option>`).join('')}</select>
     </div>
     <div class="panel"><div style="overflow-x:auto"><table>
-      <thead><tr><th class="tl">№</th><th>Приор.</th><th>Компания</th><th>ЛПР</th><th>Сегмент</th><th>Стадия</th><th style="padding-right:1.15rem">Открытый шаг</th></tr></thead>
-      <tbody>${rows.map(c=>{const ot=openTaskFor(s,c.id);const lprN=s.contacts.filter(k=>k.company_id===c.id&&k.status==='active').length;
-        const step=ot?esc(ot.title):(ACTIVE.includes(c.funnel_stage)?'<span class="c-signal">— без шага</span>':'—');
+      <thead><tr><th class="tl">№</th><th>Приор.</th><th>Компания</th><th>ЛПР</th><th>Сегмент</th><th>Стадия</th><th style="padding-right:1.15rem">Отложено</th></tr></thead>
+      <tbody>${rows.map(c=>{const lprs=s.contacts.filter(k=>k.company_id===c.id&&k.status==='active');const lprN=lprs.length;
+        const deferredN=lprs.filter(k=>contactStage(s,k)==='deferred').length;
         return `<tr class="hoverable"><td class="tl faint readout">${esc(c.ext_no)}</td><td>${prio(c.priority)}</td>
           <td><a href="#/companies/${c.id}" class="link" style="font-weight:500">${esc(c.name)}</a></td>
           <td class="readout faint">${lprN}</td><td class="muted">${esc(c.segment)}</td><td>${stageChip(c.funnel_stage)}</td>
-          <td class="muted" style="padding-right:1.15rem">${step}</td></tr>`;}).join('')}</tbody>
+          <td class="muted" style="padding-right:1.15rem">${deferredN?`<span class="chip chip-wait">${deferredN} ЛПР</span>`:'—'}</td></tr>`;}).join('')}</tbody>
     </table>${rows.length?'':'<div style="padding:2rem;text-align:center" class="faint">Ничего не найдено</div>'}</div></div>
   </div>`;
 }
@@ -1081,11 +1198,10 @@ function pageCompany(id){
   if(!c)return `<div class="stack"><p>Компания не найдена.</p><a href="#/companies" class="link" style="text-decoration:underline">← К списку</a></div>`;
   const contacts=s.contacts.filter(k=>k.company_id===c.id);
   const tasks=s.tasks.filter(t=>t.company_id===c.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  const ot=openTaskFor(s,c.id);
   const terminal=['rejected','excluded','revenue'].includes(c.funnel_stage);
   const tab=App.compTab;
   let actions='';
-  if(!terminal){actions=`<div class="rowflex">${ot?`<button class="btn btn-primary" onclick="ui.complete('${ot.id}')">Завершить: ${esc(ot.title)}</button>`:`<button class="btn btn-signal" onclick="ui.addStep('${c.id}')">+ Назначить следующий шаг</button>`}${c.funnel_stage==='agreement'?`<button class="btn btn-moss" onclick="ui.revenue('${c.id}')">Зафиксировать выручку</button>`:''}</div>`;}
+  if(!terminal){actions=`<div class="rowflex"><button class="btn btn-primary" onclick="App.go('#/crm')">Открыть CRM</button>${c.funnel_stage==='agreement'?`<button class="btn btn-moss" onclick="ui.revenue('${c.id}')">Зафиксировать выручку</button>`:''}</div>`;}
   const dossierFields=[['Почему подходит',c.why_fit],['Сигнал / наблюдение',c.signal_note],['Релевантная гипотеза',c.relevant_hypothesis_text],['Что проверить / предложить',c.what_to_check],['Кого искать для входа',c.who_to_find],['Расширенный повод',c.extended_reason],['Заготовка 1-го сообщения',c.first_message_template],['Заготовка 2-го сообщения',c.second_message_template]];
   let bodyHtml='';
   if(tab==='dossier'){bodyHtml=`<dl class="dossier">${dossierFields.map(([l,v])=>`<div><dt class="eyebrow">${l}</dt><dd style="margin:.25rem 0 0;font-size:.85rem">${esc(v||'—')}</dd></div>`).join('')}</dl>`;}
@@ -1094,15 +1210,16 @@ function pageCompany(id){
         <div style="flex:1;min-width:0"><div class="rowflex"><span style="font-weight:600">${esc(k.full_name)}</span>${ex?'<span class="chip chip-ink">исключён</span>':''}</div>
           <div class="faint" style="font-size:.78rem">${esc(k.position||k.role_target)}</div>
           <div class="rowflex" style="margin-top:.3rem"><span class="count">касаний ${stt.touches}</span><span class="count">встреч ${stt.meetings}</span>${k.telegram?`<span class="faint readout" style="font-size:.72rem">${esc(k.telegram)}</span>`:''}</div></div>
-        ${!terminal?(ex?`<button class="btn btn-ghost btn-sm" onclick="App.restoreContact('${k.id}')">Вернуть</button>`:`<div class="rowflex"><button class="btn btn-primary btn-sm" onclick="ui.addStep('${c.id}','${k.id}')">Шаг с ним</button><button class="btn btn-ghost btn-sm" style="color:var(--signal)" onclick="ui.excludeContact('${k.id}')">Исключить</button></div>`):''}
+        ${!terminal?(ex?`<button class="btn btn-ghost btn-sm" onclick="App.restoreContact('${k.id}')">Вернуть</button>`:`<div class="rowflex"><button class="btn btn-primary btn-sm" onclick="App.go('#/crm')">Открыть CRM</button><button class="btn btn-ghost btn-sm" style="color:var(--signal)" onclick="ui.excludeContact('${k.id}')">Исключить</button></div>`):''}
       </div>`;}).join(''):'<div style="padding:1.15rem" class="faint">Нет ЛПР</div>'}</div>`;}
-  else{bodyHtml=`<div>${tasks.length?tasks.map(t=>{const kn=t.contact_id?contactName(s,t.contact_id):null;const h=t.hypothesis_id?hypById(s,t.hypothesis_id):null;
+  else{bodyHtml=`<div>${tasks.length?tasks.map(t=>{const kn=t.contact_id?contactName(s,t.contact_id):null;const h=t.hypothesis_id?hypById(s,t.hypothesis_id):null;const isMarker=t.type==='custom'&&(t.title==='Отложено'||t.title==='Сигнал');
       return `<div class="spread" style="padding:.75rem 1.15rem;border-bottom:1px solid var(--line)"><div style="min-width:0"><div class="rowflex"><span style="font-weight:500">${esc(t.title)}</span><span class="chip chip-neutral">${TASK_TYPE_META[t.type].label}</span>${statusChip(t.status)}</div>
           <div class="faint" style="font-size:.75rem;margin-top:3px">${kn?'ЛПР: '+esc(kn):'без ЛПР'}${h?' · '+esc(h.code)+' '+esc(h.title):''}</div>
           ${t.result_note?`<div class="faint" style="font-size:.75rem;margin-top:2px">↳ ${esc(t.result_note)}</div>`:''}
-          <div class="faint readout" style="font-size:.72rem;margin-top:2px">Создана ${fmtD(t.created_at)}${t.due_at?' · дедлайн '+fmtD(t.due_at):''}${t.completed_at?' · завершена '+fmtD(t.completed_at):''}</div></div>${(t.status==='planned'||t.status==='waiting')?`<button class="btn btn-primary btn-sm" onclick="ui.complete('${t.id}')">Завершить</button>`:''}
+          <div class="faint readout" style="font-size:.72rem;margin-top:2px">Создана ${fmtD(t.created_at)}${t.due_at?' · дедлайн '+fmtD(t.due_at):''}${t.completed_at?' · завершена '+fmtD(t.completed_at):''}</div></div>${!isMarker&&(t.status==='planned'||t.status==='waiting')?`<button class="btn btn-primary btn-sm" onclick="ui.complete('${t.id}')">Завершить</button>`:''}
       </div>`;}).join(''):'<div style="padding:1.15rem" class="faint">Действий ещё нет</div>'}</div>`;}
   const activeLpr=contacts.filter(k=>k.status==='active').length;
+  const deferredLpr=contacts.filter(k=>k.status==='active'&&contactStage(s,k)==='deferred');
   return `<div class="stack">
     <a href="#/companies" class="eyebrow link">← Компании</a>
     <div class="spread" style="align-items:flex-start;flex-wrap:wrap"><div><div class="rowflex">${prio(c.priority)}<h1 class="display" style="font-size:1.6rem;font-weight:700">${esc(c.name)}</h1>${stageChip(c.funnel_stage)}</div>
@@ -1110,7 +1227,7 @@ function pageCompany(id){
         ${c.funnel_stage==='revenue'?`<p class="c-moss readout" style="font-weight:600;margin:.35rem 0 0">Выручка: ${fmtM(c.revenue_amount)}</p>`:''}
         ${c.funnel_stage==='excluded'?`<p class="faint" style="font-size:.85rem;margin:.35rem 0 0">Исключена: ${esc(c.excluded_reason||'—')}</p>`:''}
       </div>${actions}</div>
-    ${(!terminal&&!ot)?`<div class="warn-banner"><span class="beacon"></span> Компания без следующего шага — она «зависла» и попадает в «Фокус». Назначьте шаг с конкретным ЛПР.</div>`:''}
+    ${deferredLpr.length?`<div class="warn-banner"><span class="beacon"></span> В «Отложенных»: ${deferredLpr.map(k=>esc(k.full_name)).join(', ')}. Перенесите карточку в этап CRM, когда определите дальнейшее действие.</div>`:''}
     <div class="panel"><div class="tabs">
         <button class="${tab==='dossier'?'on':''}" onclick="App.setTab('dossier')">Досье</button>
         <button class="${tab==='lpr'?'on':''}" onclick="App.setTab('lpr')">ЛПР / Аккаунты<span class="cnt">${activeLpr}</span></button>
@@ -1131,7 +1248,7 @@ function pageContacts(){
     return true;});
   return `<div class="stack">
     <div class="page-head"><div><div class="eyebrow">ЛПР</div><h1>Контакты</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">${s.contacts.length} контактов${unmatched?` · <span class="c-signal">${unmatched} без матча</span>`:''}</p></div>
-      <button class="btn btn-brass btn-sm" onclick="document.getElementById('fileExcel').click()">Загрузить Excel</button></div>
+      <button class="btn btn-primary btn-sm" onclick="ui.addContact()">+ Контакт</button></div>
     <div class="rowflex">
       <input class="field auto" style="width:260px" placeholder="Поиск по имени, должности…" value="${esc(contactFilters.q)}" oninput="contactFilters.q=this.value;renderBody()">
       <select class="field auto" onchange="contactFilters.company=this.value;renderBody()"><option value="all">Все компании</option>${s.companies.map(c=>`<option value="${c.id}" ${contactFilters.company===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}${unmatched?`<option value="unmatched" ${contactFilters.company==='unmatched'?'selected':''}>⚠ Без матча (${unmatched})</option>`:''}</select>
@@ -1228,7 +1345,7 @@ function pageHypotheses(){
           <div style="text-align:right;min-width:160px">
             <div class="rowflex" style="justify-content:flex-end;margin-bottom:.4rem"><select class="field auto sm" onchange="App.setHypStatus('${h.id}',this.value)">${HYP_STATUS.map(st=>`<option value="${st}" ${h.status===st?'selected':''}>${HYP_STATUS_LABEL[st]}</option>`).join('')}</select>${prioFull(h.priority)}</div>
             <div class="eyebrow">Цель · ${esc(h.unit)}: <b class="readout" style="color:var(--ink)">${h.plan}</b></div>
-            <div class="rowflex" style="justify-content:flex-end;margin-top:.5rem"><span class="readout c-teal" style="font-size:1.3rem;font-weight:700">${p}%</span><button class="btn btn-ghost btn-xs" onclick="App.toggleHypCollapse('${h.id}')">${collapsed?'Развернуть':'Свернуть'}</button><button class="btn btn-ghost btn-xs" style="color:var(--signal)" onclick="App.deleteHyp('${h.id}')">Удалить</button></div>
+            <div class="rowflex" style="justify-content:flex-end;margin-top:.5rem"><span class="readout c-teal" style="font-size:1.3rem;font-weight:700">${p}%</span><button class="btn btn-ghost btn-xs" onclick="ui.editHyp('${h.id}')">✎ Изменить</button><button class="btn btn-ghost btn-xs" onclick="App.toggleHypCollapse('${h.id}')">${collapsed?'Развернуть':'Свернуть'}</button><button class="btn btn-ghost btn-xs" style="color:var(--signal)" onclick="App.deleteHyp('${h.id}')">Удалить</button></div>
           </div></div>`;
       if(collapsed)return `<div class="panel" style="overflow:hidden">${head}</div>`;
       const body=`<div class="bar" style="border-radius:0"><i style="width:${p}%"></i></div>
@@ -1239,7 +1356,7 @@ function pageHypotheses(){
             let row=`<tr class="hoverable"><td class="tl"><span class="exp" onclick="App.toggleHt('${t.id}')">${expanded?'▾':'▸'}</span><span style="font-weight:500;cursor:pointer" onclick="App.toggleHt('${t.id}')">${esc(t.title)}</span></td>
               <td><span class="chip ${HT_STATUS_CHIP[eff]}">${HT_STATUS_LABEL[eff]}</span></td><td class="faint readout">${esc(t.unit)}</td><td class="tr readout">${pl}</td><td class="tr">${factCell}</td>
               <td class="tr" style="min-width:96px"><div class="rowflex" style="justify-content:flex-end;gap:.4rem"><div class="bar" style="width:52px"><i style="width:${pct}%"></i></div><span class="readout faint" style="font-size:.72rem">${pct}%</span></div></td>
-              <td>${prioFull(t.priority)}</td><td class="tr" style="padding-right:1.15rem"><span class="exp" style="color:var(--signal)" title="Удалить задачу" onclick="App.deleteHypTask('${t.id}')">✕</span></td></tr>`;
+              <td>${prioFull(t.priority)}</td><td class="tr" style="padding-right:1.15rem;white-space:nowrap"><span class="exp" title="Редактировать задачу" onclick="ui.editTask('${t.id}')">✎</span><span class="exp" style="color:var(--signal)" title="Удалить задачу" onclick="App.deleteHypTask('${t.id}')">✕</span></td></tr>`;
             if(expanded){let inner;
               if(t.mode==='tracked'){const csx=htContrib(s,t);inner=csx.length?csx.map(x=>`<div class="contrib"><b>✓</b> ${esc(x.title)} · ${esc(companyName(s,x.company_id))}${x.contact_id?' · '+esc(contactName(s,x.contact_id)||''):''} · ${fmtD(x.completed_at)}</div>`).join(''):'<span class="faint" style="font-size:.78rem">Пока нет засчитанных действий. Завершайте касания/встречи с привязкой к этой задаче — факт наберётся сам.</span>';}
               else{const subs=htSubs(s,t);inner=`<div class="subwrap">${subs.map(x=>`<span class="subchip ${x.is_done?'done':''}"><span onclick="App.toggleSubtask('${x.id}')" style="cursor:pointer">${x.is_done?'☑':'☐'} ${esc(x.title)}</span><span class="del" onclick="App.deleteSubtask('${x.id}')" style="cursor:pointer">✕</span></span>`).join('')}<button class="tinyadd" onclick="ui.addSub('${t.id}')">+ Подзадача</button></div>`;}
@@ -1313,20 +1430,174 @@ const ui={
       <div><label class="lbl eyebrow">Название подзадачи</label><input id="sb-title" class="field" placeholder="Напр. «Касание 1»"></div>
       <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-brass" onclick="ui._submitSub('${htid}')">Добавить</button></div></div>`);
     setTimeout(()=>{const el=document.getElementById('sb-title');if(el)el.focus();},30);},
-  _submitSub(htid){const t=document.getElementById('sb-title').value;if(!t)return;App.addSubtask(htid,t);App.closeModal();}
+  _submitSub(htid){const t=document.getElementById('sb-title').value;if(!t)return;App.addSubtask(htid,t);App.closeModal();},
+  addCompany(cb){App.openModal(`<div class="panel modal" style="max-width:480px"><div class="modal-head"><h3>Новая компания</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+      <div><label class="lbl eyebrow">Название</label><input id="co-name" class="field" placeholder="ООО «…»"></div>
+      <div class="grid g2 mrow"><div><label class="lbl eyebrow">Сегмент</label><input id="co-seg" class="field"></div><div><label class="lbl eyebrow">ИНН</label><input id="co-inn" class="field" inputmode="numeric" placeholder="10 или 12 цифр"></div></div>
+      <div class="mrow"><button id="co-contact-toggle" type="button" class="btn btn-ghost btn-sm" onclick="ui._toggleCompanyContact()">+ Добавить контакт</button></div>
+      <div id="co-contact-fields" class="mrow" style="display:none;padding:1rem;background:var(--well);border:1px solid var(--line);border-radius:10px">
+        <div class="eyebrow" style="margin-bottom:.7rem">Контакт компании</div>
+        <div class="grid g2"><div><label class="lbl eyebrow">Имя и фамилия</label><input id="co-k-name" class="field" placeholder="Иван Петров"></div><div><label class="lbl eyebrow">Должность</label><input id="co-k-pos" class="field"></div></div>
+        <div class="mrow"><label class="lbl eyebrow">Роль / целевой контур</label><input id="co-k-role" class="field" placeholder="COO / операционная эффективность"></div>
+        <div class="grid g3 mrow"><div><label class="lbl eyebrow">Телефон</label><input id="co-k-phone" class="field"></div><div><label class="lbl eyebrow">Почта</label><input id="co-k-email" class="field"></div><div><label class="lbl eyebrow">Telegram</label><input id="co-k-tg" class="field"></div></div>
+      </div>
+      <div class="faint" style="font-size:.72rem;margin-top:.6rem">Компания попадёт в CRM в колонку «Сигнал».</div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="ui._submitCompany(${cb?'true':'false'})">Создать</button></div></div>`);},
+  _toggleCompanyContact(){const fields=document.getElementById('co-contact-fields'),button=document.getElementById('co-contact-toggle');const show=fields.style.display==='none';fields.style.display=show?'':'none';button.textContent=show?'− Убрать контакт':'+ Добавить контакт';if(show)setTimeout(()=>document.getElementById('co-k-name').focus(),20);},
+  _submitCompany(back){const n=document.getElementById('co-name').value;if(!n){toast('Укажите название компании');return;}const contactFields=document.getElementById('co-contact-fields');const withContact=contactFields&&contactFields.style.display!=='none';const contactNameValue=withContact?document.getElementById('co-k-name').value.trim():'';if(withContact&&!contactNameValue){toast('Укажите имя контакта или уберите блок контакта');return;}const companyId=App.addCompany({name:n,segment:document.getElementById('co-seg').value,inn:document.getElementById('co-inn').value});if(withContact)App.addContact({companyId,full_name:contactNameValue,position:document.getElementById('co-k-pos').value,role_target:document.getElementById('co-k-role').value,phone:document.getElementById('co-k-phone').value,email:document.getElementById('co-k-email').value,telegram:document.getElementById('co-k-tg').value});App.closeModal();},
+  addContact(){const s=App.state;const opts=s.companies.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Новый контакт (ЛПР)</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+      <div class="grid g2"><div><label class="lbl eyebrow">Имя и фамилия</label><input id="k-name" class="field"></div><div><label class="lbl eyebrow">Компания</label><select id="k-co" class="field"><option value="">— без компании —</option>${opts}</select></div></div>
+      <div class="grid g2 mrow"><div><label class="lbl eyebrow">Должность</label><input id="k-pos" class="field"></div><div><label class="lbl eyebrow">Роль / цель</label><input id="k-role" class="field" placeholder="ЛПР по закупкам"></div></div>
+      <div class="grid g3 mrow"><div><label class="lbl eyebrow">Телефон</label><input id="k-phone" class="field"></div><div><label class="lbl eyebrow">Почта</label><input id="k-email" class="field"></div><div><label class="lbl eyebrow">Telegram</label><input id="k-tg" class="field"></div></div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="ui._submitContact()">Создать</button></div></div>`);},
+  _submitContact(){const n=document.getElementById('k-name').value;if(!n)return;App.addContact({full_name:n,companyId:document.getElementById('k-co').value||null,position:document.getElementById('k-pos').value,role_target:document.getElementById('k-role').value,phone:document.getElementById('k-phone').value,email:document.getElementById('k-email').value,telegram:document.getElementById('k-tg').value});App.closeModal();},
+  editHyp(id){const h=hypById(App.state,id);if(!h)return;
+    App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Редактировать гипотезу</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+      <div class="grid g2"><div><label class="lbl eyebrow">Код</label><input id="eh-code" class="field" value="${esc(h.code||'')}"></div><div><label class="lbl eyebrow">Приоритет</label><select id="eh-prio" class="field">${['A','B','C'].map(p=>`<option ${h.priority===p?'selected':''}>${p}</option>`).join('')}</select></div></div>
+      <div class="mrow"><label class="lbl eyebrow">Название (тезис)</label><input id="eh-title" class="field" value="${esc(h.title)}"></div>
+      <div class="mrow"><label class="lbl eyebrow">SMART-цель</label><textarea id="eh-smart" class="field" rows="3">${esc(h.smart||'')}</textarea></div>
+      <div class="grid g2 mrow"><div><label class="lbl eyebrow">Ед. цели</label><input id="eh-unit" class="field" value="${esc(h.unit||'')}"></div><div><label class="lbl eyebrow">План</label><input id="eh-plan" type="number" class="field" value="${h.plan}"></div></div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="ui._submitEditHyp('${id}')">Сохранить</button></div></div>`);},
+  _submitEditHyp(id){const t=document.getElementById('eh-title').value;if(!t)return;App.updateHyp(id,{code:document.getElementById('eh-code').value,title:t,smart:document.getElementById('eh-smart').value,unit:document.getElementById('eh-unit').value,plan:Number(document.getElementById('eh-plan').value)||1,priority:document.getElementById('eh-prio').value});App.closeModal();},
+  editTask(id){const t=htById(App.state,id);if(!t)return;const manual=t.mode!=='tracked';
+    App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Редактировать задачу гипотезы</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+      <div><label class="lbl eyebrow">Название задачи</label><input id="et-title" class="field" value="${esc(t.title)}"></div>
+      <div class="grid g3 mrow"><div><label class="lbl eyebrow">Ед.</label><input id="et-unit" class="field" value="${esc(t.unit||'КЕ')}"></div><div><label class="lbl eyebrow">План</label><input id="et-plan" type="number" class="field" value="${t.plan}" ${manual?'disabled':''}></div><div><label class="lbl eyebrow">Приоритет</label><select id="et-prio" class="field">${['A','B','C'].map(p=>`<option ${t.priority===p?'selected':''}>${p}</option>`).join('')}</select></div></div>
+      <div class="faint" style="font-size:.72rem;margin-top:.5rem">${manual?'Ручная задача: план = число подзадач (здесь не меняется).':'Автотрекинг ('+esc(t.track||'')+'): план — целевое число.'}</div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="ui._submitEditTask('${id}')">Сохранить</button></div></div>`);},
+  _submitEditTask(id){const title=document.getElementById('et-title').value;if(!title)return;const task=htById(App.state,id);const patch={title,unit:document.getElementById('et-unit').value,priority:document.getElementById('et-prio').value};if(task&&task.mode==='tracked')patch.plan=Number(document.getElementById('et-plan').value)||1;App.updateHypTask(id,patch);App.closeModal();},
+  addStrategy(){App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Новая стратегия</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+      <div><label class="lbl eyebrow">Название</label><input id="ns-name" class="field" placeholder="Например, «Выход в пищепром ЦФО»"></div>
+      <div class="grid g2 mrow"><div><label class="lbl eyebrow">Квартал</label><select id="ns-q" class="field">${quarterOptions('')}</select></div></div>
+      <div class="mrow"><label class="lbl eyebrow">Описание</label><textarea id="ns-desc" class="field" rows="3" placeholder="Опишите стратегию своими словами…"></textarea></div>
+      <div class="mrow"><label class="lbl eyebrow">Ожидаемый эффект</label><textarea id="ns-eff" class="field" rows="3"></textarea></div>
+      <div class="faint" style="font-size:.72rem;margin-top:.6rem">Создастся с пустыми KPI-целями — их план задаётся в этой же вкладке.</div>
+      <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="ui._submitStrategy()">Создать</button></div></div>`);},
+  _submitStrategy(){const n=document.getElementById('ns-name').value;if(!n)return;App.addStrategyManual({name:n,quarter:document.getElementById('ns-q').value,description:document.getElementById('ns-desc').value,expected_effect:document.getElementById('ns-eff').value});App.closeModal();location.hash='#/strategy';renderBody();}
 };
 
 /* ============================ РОУТЕР ============================ */
+/* ============================ CRM-КАНБАН ============================ */
+let _crmDrag=null,_boardDrag=null;
+function crmContactCard(s,k){
+  const c=s.companies.find(x=>x.id===k.company_id);
+  const deferred=contactStage(s,k)==='deferred';
+  return `<div class="kcard" draggable="true" ondragstart="crmDragStart(event,'${k.id}','contact')">
+    <div class="kcard-t">${esc(k.full_name)}</div>
+    <div class="kcard-s">${c?esc(c.name):'без компании'}${k.position?' · '+esc(k.position):''}</div>
+    ${c&&c.inn?`<div class="kcard-m">ИНН ${esc(c.inn)}</div>`:''}
+    ${deferred?'<div style="margin-top:.45rem"><span class="chip chip-wait">решение не принято</span></div>':''}</div>`;
+}
+function crmCompanyCard(s,c){
+  const lpr=s.contacts.filter(k=>k.company_id===c.id).length;
+  return `<div class="kcard kcard-co" draggable="true" ondragstart="crmDragStart(event,'${c.id}','company')">
+    <div class="kcard-t">${esc(c.name)}</div>
+    <div class="kcard-s">сигнал по компании${c.segment?' · '+esc(c.segment):''}</div>
+    <div class="kcard-m">${c.inn?'ИНН '+esc(c.inn)+' · ':''}ЛПР: ${lpr}</div>
+    <div style="margin-top:.45rem"><span class="chip chip-neutral">выбрать ЛПР при переносе</span></div></div>`;
+}
+function pageCRM(){
+  const s=App.state;
+  const cols=CRM_COLS.map(col=>{
+    let cards='';
+    const signalCompanies=s.companies.filter(c=>c.funnel_stage==='new_signal');
+    const signalContacts=s.contacts.filter(k=>contactStage(s,k)==='signal'&&(!k.company_id||!signalCompanies.some(c=>c.id===k.company_id)));
+    const stageContacts=s.contacts.filter(k=>contactStage(s,k)===col.id);
+    if(col.id==='signal')cards=signalCompanies.map(c=>crmCompanyCard(s,c)).join('')+signalContacts.map(k=>crmContactCard(s,k)).join('');
+    else cards=stageContacts.map(k=>crmContactCard(s,k)).join('');
+    const n=col.id==='signal'?signalCompanies.length+signalContacts.length:stageContacts.length;
+    const add=col.id==='signal'?`<button class="kadd" onclick="ui.addCompany()">+ компания</button><button class="kadd" onclick="openCrmManual('signal')">+ ЛПР</button>`:col.id==='deferred'?`<button class="kadd" onclick="openCrmManual('deferred')">+ ЛПР</button>`:`<button class="kadd" onclick="openCrmManual('${col.id}')">+ действие</button>`;
+    return `<div class="kcol" ondragover="event.preventDefault();this.classList.add('drop')" ondragleave="this.classList.remove('drop')" ondrop="crmDrop(event,'${col.id}')">
+      <div class="kcol-h"><span>${col.label}</span><span class="kcol-c">${n}</span></div>
+      <div class="kcol-add">${add}</div>
+      <div class="kcol-body">${cards||'<div class="kempty">пусто</div>'}</div></div>`;
+  }).join('');
+  return `<div class="stack"><div class="page-head"><div><div class="eyebrow">Воронка ЛПР</div><h1>CRM</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Перенос в этап фиксирует состоявшееся действие · «Отложенные» — ЛПР, по которым дальнейшее действие пока не определено</p></div></div>
+    <div class="kboard">${cols}</div></div>`;
+}
+function crmDragStart(e,id,kind){_crmDrag={id,kind};e.dataTransfer.effectAllowed='move';}
+function crmDrop(e,colId){e.preventDefault();document.querySelectorAll('.kcol.drop').forEach(x=>x.classList.remove('drop'));if(!_crmDrag)return;const d=_crmDrag;_crmDrag=null;openCrmMove(d.id,d.kind,colId);}
+function openCrmMove(id,kind,colId){
+  const s=App.state;
+  if(kind==='contact'){const k=s.contacts.find(x=>x.id===id);crmDialog(colId,'',id);return;}
+  // company card
+  const c=s.companies.find(x=>x.id===id);
+  const opts=s.contacts.filter(k=>k.company_id===id&&k.status==='active').map(k=>`<option value="${k.id}">${esc(k.full_name)}${k.position?' · '+esc(k.position):''}</option>`).join('');
+  if(!opts){toast('У компании нет ЛПР — сначала добавьте контакт');return;}
+  crmDialog(colId,opts,null);
+}
+function openCrmManual(colId){
+  const s=App.state;
+  const opts=s.contacts.filter(k=>k.status==='active').map(k=>{const c=s.companies.find(x=>x.id===k.company_id);return `<option value="${k.id}">${esc(k.full_name)}${c?' · '+esc(c.name):''}</option>`;}).join('');
+  if(!opts){toast('Нет контактов — добавьте ЛПР в разделе «Контакты»');return;}
+  crmDialog(colId,opts,null);
+}
+function crmDialog(colId,contactOpts,fixedId){
+  const col=CRM_COL(colId);
+  const cf=fixedId?`<input type="hidden" id="cm-contact" value="${fixedId}">`:`<div><label class="lbl eyebrow">С каким ЛПР</label><select id="cm-contact" class="field">${contactOpts}</select></div>`;
+  if(col.id==='signal'){App.openModal(`<div class="panel modal" style="max-width:440px"><div class="modal-head"><h3>Поставить в «Сигнал»</h3><button class="x" onclick="App.closeModal()">✕</button></div>${cf}<div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="submitCrmMove('signal')">Поставить</button></div></div>`);return;}
+  if(col.id==='deferred'){App.openModal(`<div class="panel modal" style="max-width:480px"><div class="modal-head"><h3>Перенести в «Отложенные»</h3><button class="x" onclick="App.closeModal()">✕</button></div>${cf}<p class="muted" style="font-size:.85rem;margin:.85rem 0 0">ЛПР останется здесь, пока вы не определите следующее действие и не перенесёте карточку в нужный этап.</p><div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="submitCrmMove('deferred')">Отложить</button></div></div>`);return;}
+  const isWon=col.id==='won';
+  App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Зафиксировать: ${esc(col.label)}</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+    ${cf}
+    <div class="grid g2 mrow"><div><label class="lbl eyebrow">Гипотеза</label><select id="cm-hyp" class="field" onchange="cmFillHT(this.value)">${optHyps('')}</select></div><div><label class="lbl eyebrow">Задача гипотезы</label><select id="cm-htask" class="field">${optHypTasks('','')}</select></div></div>
+    <div class="mrow"><label class="lbl eyebrow">Результат</label><input id="cm-note" class="field" placeholder="кратко"></div>
+    ${isWon?`<div class="mrow"><label class="lbl eyebrow">Сумма сделки, ₽</label><input id="cm-rev" type="number" class="field"></div>`:''}
+    <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="submitCrmMove('${colId}')">Зафиксировать</button></div></div>`);
+}
+function cmFillHT(h){const el=document.getElementById('cm-htask');if(el)el.innerHTML=optHypTasks(h,'');}
+function submitCrmMove(colId){
+  const contactId=document.getElementById('cm-contact').value; if(!contactId){toast('Выберите ЛПР');return;}
+  const s=App.state,k=s.contacts.find(x=>x.id===contactId);
+  const d={contactId,colId,companyId:k?k.company_id:null};
+  const col=CRM_COL(colId);
+  if(col.id!=='signal'&&col.id!=='deferred'){d.hypId=document.getElementById('cm-hyp').value||null;d.hypTaskId=document.getElementById('cm-htask').value||null;d.note=document.getElementById('cm-note').value;}
+  if(col.id==='won'){d.revenue=document.getElementById('cm-rev').value;}
+  App.crmMove(d); App.closeModal();toast(col.id==='deferred'?'ЛПР перенесён в «Отложенные»':col.id==='signal'?'ЛПР возвращён в «Сигнал»':'Действие зафиксировано');
+}
+
+/* ============================ ДОСКА ЗАДАЧ ============================ */
+function pageBoard(){
+  const s=App.state, cs=CS(s);
+  const tasks=(s.boardTasks||[]).filter(t=>!t.strategy_id||t.strategy_id===cs.id);
+  const cols=BOARD_COLS.map(col=>{
+    const list=tasks.filter(t=>t.status===col.id);
+    const cards=list.map(t=>{const h=t.hypothesis_id?hypById(s,t.hypothesis_id):null;const ht=t.hyp_task_id?htById(s,t.hyp_task_id):null;
+      return `<div class="kcard" draggable="true" ondragstart="boardDragStart(event,'${t.id}')">
+        <div class="kcard-t">${esc(t.title)}</div>
+        <div class="kcard-m" style="margin-top:.3rem">${h?`<span class="chip chip-teal">${esc(h.code)}</span> `:''}${ht?esc(ht.title):'<span class="faint">без задачи гипотезы</span>'}</div>
+        ${t.due_at?`<div class="kcard-m">до ${fmtDshort(t.due_at)}</div>`:''}${t.completed_at?`<div class="kcard-m c-moss">готово ${fmtDshort(t.completed_at)}</div>`:''}
+        <div style="margin-top:.35rem;text-align:right"><span class="exp" style="color:var(--signal)" title="Удалить" onclick="App.deleteBoardTask('${t.id}')">✕</span></div></div>`;}).join('');
+    return `<div class="kcol" ondragover="event.preventDefault();this.classList.add('drop')" ondragleave="this.classList.remove('drop')" ondrop="boardDrop(event,'${col.id}')">
+      <div class="kcol-h"><span>${col.label}</span><span class="kcol-c">${list.length}</span></div>
+      ${col.id==='new'?'<div class="kcol-add"><button class="kadd" onclick="openBoardAdd()">+ задача</button></div>':'<div class="kcol-add"></div>'}
+      <div class="kcol-body">${cards||'<div class="kempty">пусто</div>'}</div></div>`;
+  }).join('');
+  return `<div class="stack"><div class="page-head"><div><div class="eyebrow">Исполнение</div><h1>Задачи</h1><p class="muted" style="font-size:.85rem;margin:.3rem 0 0">Канбан задач по гипотезам · перетаскивайте между колонками, «Готово» уходит в архив</p></div><button class="btn btn-primary btn-sm" onclick="openBoardAdd()">+ Задача</button></div>
+    <div class="kboard kboard4">${cols}</div></div>`;
+}
+function openBoardAdd(){App.openModal(`<div class="panel modal"><div class="modal-head"><h3>Новая задача</h3><button class="x" onclick="App.closeModal()">✕</button></div>
+    <div><label class="lbl eyebrow">Название</label><input id="bt-title" class="field" placeholder="Что нужно сделать"></div>
+    <div class="grid g2 mrow"><div><label class="lbl eyebrow">Гипотеза</label><select id="bt-hyp" class="field" onchange="btFillHT(this.value)">${optHyps('')}</select></div><div><label class="lbl eyebrow">Главная задача (задача гипотезы)</label><select id="bt-htask" class="field">${optHypTasks('','')}</select></div></div>
+    <div class="mrow"><label class="lbl eyebrow">Дедлайн</label><input id="bt-due" type="date" class="field" style="width:180px"></div>
+    <div class="end"><button class="btn btn-ghost" onclick="App.closeModal()">Отмена</button><button class="btn btn-primary" onclick="submitBoardAdd()">Создать</button></div></div>`);}
+function btFillHT(h){const el=document.getElementById('bt-htask');if(el)el.innerHTML=optHypTasks(h,'');}
+function submitBoardAdd(){const t=document.getElementById('bt-title').value;if(!t)return;const dd=document.getElementById('bt-due').value;App.addBoardTask({title:t,hypId:document.getElementById('bt-hyp').value||null,hypTaskId:document.getElementById('bt-htask').value||null,due:dd?new Date(dd).toISOString():null});App.closeModal();}
+function boardDragStart(e,id){_boardDrag=id;e.dataTransfer.effectAllowed='move';}
+function boardDrop(e,status){e.preventDefault();document.querySelectorAll('.kcol.drop').forEach(x=>x.classList.remove('drop'));if(!_boardDrag)return;const id=_boardDrag;_boardDrag=null;App.moveBoardTask(id,status);}
+
 function bodyHtml(){
   const h=location.hash||'#/';
   if(h==='#/'||h==='')return pageDashboard();
   if(h==='#/strategy')return pageStrategy();
   if(h==='#/hypotheses')return pageHypotheses();
-  if(h==='#/signals')return pageSignals();
+  if(h==='#/crm')return pageCRM();
+  if(h==='#/signals')return pageCRM();
   if(h==='#/companies')return pageCompanies();
   if(h.startsWith('#/companies/'))return pageCompany(h.split('/')[2]);
   if(h==='#/contacts')return pageContacts();
-  if(h==='#/tasks')return pageTasks();
+  if(h==='#/tasks')return pageBoard();
   return pageDashboard();
 }
 function renderBody(){document.getElementById('page-body').innerHTML=bodyHtml();}
@@ -1334,7 +1605,6 @@ function render(){document.getElementById('app').innerHTML=`<div class="app">${s
 function renderModal(){document.getElementById('modal-root').innerHTML=App.modal?`<div class="overlay">${App.modal}</div>`:'';}
 window.addEventListener('hashchange',()=>{App.compTab='dossier';const mn=document.querySelector('.main');if(mn)mn.scrollTop=0;render();});
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&App.modal)App.cancelModal();});
-document.getElementById('fileStrategy').addEventListener('change',function(){if(this.files[0])handleStrategyFile(this.files[0]);this.value='';});
 document.getElementById('fileExcel').addEventListener('change',function(){if(this.files[0])handleExcelFile(this.files[0]);this.value='';});
 boot();
 </script>

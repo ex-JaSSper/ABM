@@ -71,6 +71,7 @@ create table if not exists company (
   id uuid primary key default gen_random_uuid(),
   ext_no text,
   name text not null default 'Без названия',
+  inn text default '',
   priority text default 'B' check (priority in ('A','B','C')),
   segment text default '', category text default '', geography text default '',
   why_fit text default '', signal_note text default '', relevant_hypothesis_text text default '',
@@ -97,6 +98,7 @@ create table if not exists contact (
   confidence text default '', comment text default '', how_to_get text default '',
   status text not null default 'active' check (status in ('active','excluded')),
   excluded_reason text default '',
+  crm_stage text,
   created_at timestamptz not null default now()
 );
 create index if not exists idx_contact_company on contact(company_id);
@@ -112,12 +114,27 @@ create table if not exists company_task (
   type text not null check (type in ('analyze_signal','touch_new','touch_repeat','meeting_new','meeting_repeat','agreement','custom')),
   status text not null default 'planned' check (status in ('planned','waiting','done','cancelled')),
   result_note text default '', is_next_step boolean not null default false,
-  due_at timestamptz, created_at timestamptz not null default now(), completed_at timestamptz
+  due_at timestamptz, created_at timestamptz not null default now(), completed_at timestamptz,
+  cycle int not null default 0
 );
 create index if not exists idx_task_company on company_task(company_id);
 create index if not exists idx_task_contact on company_task(contact_id);
 create index if not exists idx_task_hyptask on company_task(hyp_task_id);
 create index if not exists idx_task_status on company_task(status);
+
+-- ---------- ДОСКА ЗАДАЧ (канбан по гипотезам) ----------
+create table if not exists board_task (
+  id uuid primary key default gen_random_uuid(),
+  strategy_id uuid references strategy(id) on delete cascade,
+  hypothesis_id uuid references hypothesis(id) on delete set null,
+  hyp_task_id uuid references hyp_task(id) on delete set null,
+  title text not null default 'Новая задача',
+  status text not null default 'new' check (status in ('new','in_work','deferred','done')),
+  due_at timestamptz,
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+create index if not exists idx_board_strategy on board_task(strategy_id);
 
 -- ---------- RLS: доступ по публичному ключу (MVP без логина) ----------
 alter table strategy enable row level security;
@@ -128,11 +145,12 @@ alter table hyp_subtask enable row level security;
 alter table company enable row level security;
 alter table contact enable row level security;
 alter table company_task enable row level security;
+alter table board_task enable row level security;
 
 do $$
 declare t text;
 begin
-  foreach t in array array['strategy','kpi_target','hypothesis','hyp_task','hyp_subtask','company','contact','company_task']
+  foreach t in array array['strategy','kpi_target','hypothesis','hyp_task','hyp_subtask','company','contact','company_task','board_task']
   loop
     execute format('drop policy if exists "public all" on %I;', t);
     execute format('create policy "public all" on %I for all to anon, authenticated using (true) with check (true);', t);
