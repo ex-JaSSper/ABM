@@ -27,3 +27,4 @@ local/seed-demo.mjs
 design-qa.md
 design-qa-*.png
 supabase/stage-to-prod.sql
+supabase/restore-production-directory.sql

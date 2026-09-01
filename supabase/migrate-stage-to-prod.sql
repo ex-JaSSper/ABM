@@ -23,7 +23,7 @@ alter table company add column if not exists rejected_at timestamptz;
 alter table company add column if not exists purge_at timestamptz;
 alter table company drop constraint if exists company_funnel_stage_check;
 alter table company add constraint company_funnel_stage_check
-  check (funnel_stage in ('new_signal','rejected','in_work','touched','met','agreement','revenue','excluded'));
+  check (funnel_stage in ('database','new_signal','rejected','in_work','touched','met','agreement','revenue','excluded'));
 
 alter table contact add column if not exists crm_stage text;
 alter table contact add column if not exists hypothesis_id uuid references hypothesis(id) on delete set null;

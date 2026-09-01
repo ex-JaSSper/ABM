@@ -85,7 +85,7 @@ create table if not exists company (
   what_to_check text default '', who_to_find text default '', extended_reason text default '',
   first_message_template text default '', second_message_template text default '',
   funnel_stage text not null default 'new_signal'
-    check (funnel_stage in ('new_signal','rejected','in_work','touched','met','agreement','revenue','excluded')),
+    check (funnel_stage in ('database','new_signal','rejected','in_work','touched','met','agreement','revenue','excluded')),
   is_excluded boolean not null default false, excluded_reason text default '',
   rejection_reason_id uuid references rejection_reason(id) on delete set null,
   rejection_comment text default '', rejected_at timestamptz, purge_at timestamptz,

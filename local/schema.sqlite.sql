@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS company (
   first_message_template   TEXT DEFAULT '',
   second_message_template  TEXT DEFAULT '',
   funnel_stage             TEXT NOT NULL DEFAULT 'new_signal'
-                             CHECK (funnel_stage IN ('new_signal','rejected','in_work','touched','met','agreement','revenue','excluded')),
+                             CHECK (funnel_stage IN ('database','new_signal','rejected','in_work','touched','met','agreement','revenue','excluded')),
   is_excluded              INTEGER NOT NULL DEFAULT 0 CHECK (is_excluded IN (0,1)),
   excluded_reason          TEXT DEFAULT '',
   rejection_reason_id      TEXT REFERENCES rejection_reason(id) ON DELETE SET NULL,
