@@ -10,7 +10,16 @@
 ## 2. Создать таблицы
 1. Слева **SQL Editor** → **New query**.
 2. Вставить целиком содержимое [`schema.sql`](schema.sql) → **Run**.
-3. Должно выполниться без ошибок. Проверить: слева **Table Editor** → видно 8 таблиц (`strategy`, `hypothesis`, `hyp_task`, `hyp_subtask`, `company`, `contact`, `company_task`, `kpi_target`).
+3. Должно выполниться без ошибок. Проверить: слева **Table Editor** → видны основные таблицы, включая `strategy`, `hypothesis`, `company`, `contact`, `company_task`, `board_task` и `rejection_reason`.
+
+Если база была создана раньше, для поддержки архива гипотез дополнительно выполнить
+[`migrate-hypothesis-archive.sql`](migrate-hypothesis-archive.sql).
+
+Для приоритета задач канбана в существующей базе также выполнить
+[`migrate-board-task-priority.sql`](migrate-board-task-priority.sql).
+
+Для статуса ответа ЛПР выполнить
+[`migrate-contact-response-status.sql`](migrate-contact-response-status.sql).
 
 ## 3. Взять ключи для приложения
 **Project Settings → API**:

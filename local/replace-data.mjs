@@ -19,9 +19,9 @@ if (!args.has('--remote')) throw new Error('Укажите целевой кон
 if (!args.has('--confirm-replace')) throw new Error('Замена удаляет текущие данные. Добавьте --confirm-replace');
 
 const seed = JSON.parse(await fs.readFile(seedPath, 'utf8'));
-const tables = ['strategy', 'kpi_target', 'hypothesis', 'hyp_task', 'hyp_subtask', 'company', 'contact', 'company_task'];
-const deleteOrder = ['company_task', 'kpi_target', 'hyp_subtask', 'hyp_task', 'hypothesis', 'contact', 'company', 'strategy'];
-const insertOrder = ['strategy', 'company', 'hypothesis', 'contact', 'hyp_task', 'hyp_subtask', 'kpi_target', 'company_task'];
+const tables = ['strategy', 'kpi_target', 'hypothesis', 'hyp_task', 'hyp_subtask', 'rejection_reason', 'company', 'contact', 'company_task'];
+const deleteOrder = ['company_task', 'kpi_target', 'hyp_subtask', 'hyp_task', 'hypothesis', 'contact', 'company', 'rejection_reason', 'strategy'];
+const insertOrder = ['strategy', 'rejection_reason', 'company', 'hypothesis', 'contact', 'hyp_task', 'hyp_subtask', 'kpi_target', 'company_task'];
 
 function validate(data) {
   for (const table of tables) {

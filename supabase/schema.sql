@@ -36,7 +36,7 @@ create table if not exists hypothesis (
   code        text default '',
   title       text not null default 'Гипотеза',
   smart       text default '',
-  status      text not null default 'idea' check (status in ('idea','in_work','validated','paused','rejected')),
+  status      text not null default 'idea' check (status in ('idea','in_work','validated','paused','rejected','archived')),
   priority    text not null default 'B' check (priority in ('A','B','C')),
   unit        text default 'Цель',
   plan        int  not null default 1,
@@ -54,6 +54,7 @@ create table if not exists hyp_task (
   priority      text not null default 'B' check (priority in ('A','B','C')),
   mode          text not null default 'manual' check (mode in ('manual','tracked')),
   track         text check (track in ('touch','meeting','agreement')),   -- для mode='tracked'
+  aggregation_mode text not null default 'actions' check (aggregation_mode in ('actions','contacts','companies')),
   sort_order    int  default 0
 );
 create index if not exists idx_htask_hyp on hyp_task(hypothesis_id);
@@ -68,6 +69,15 @@ create table if not exists hyp_subtask (
 create index if not exists idx_subtask_task on hyp_subtask(hyp_task_id);
 
 -- ---------- КОМПАНИИ / КОНТАКТЫ ----------
+create table if not exists rejection_reason (
+  id             uuid primary key default gen_random_uuid(),
+  name           text not null,
+  active         boolean not null default true,
+  sort_order     int not null default 0,
+  rejected_count int not null default 0,
+  created_at     timestamptz not null default now()
+);
+
 create table if not exists company (
   id                       uuid primary key default gen_random_uuid(),
   ext_no                   text,                        -- № из загружаемой таблицы
@@ -89,6 +99,10 @@ create table if not exists company (
                              check (funnel_stage in ('new_signal','rejected','in_work','touched','met','agreement','revenue','excluded')),
   is_excluded              boolean not null default false,
   excluded_reason          text default '',
+  rejection_reason_id      uuid references rejection_reason(id) on delete set null,
+  rejection_comment        text default '',
+  rejected_at              timestamptz,
+  purge_at                 timestamptz,
   revenue_amount           numeric not null default 0,
   created_at               timestamptz not null default now(),
   last_activity_at         timestamptz not null default now()
@@ -125,6 +139,11 @@ create table if not exists contact (
   status             text not null default 'active' check (status in ('active','excluded')),
   excluded_reason    text default '',
   crm_stage           text,
+  hypothesis_id       uuid references hypothesis(id) on delete set null,
+  hyp_task_id         uuid references hyp_task(id) on delete set null,
+  owner_name          text default 'Я',
+  max_stage           text,
+  response_status     text not null default 'none' check (response_status in ('none','waiting','replied','ignored')),
   created_at         timestamptz not null default now()
 );
 create index if not exists idx_contact_company on contact(company_id);
@@ -145,7 +164,14 @@ create table if not exists company_task (
   due_at        timestamptz,
   created_at    timestamptz not null default now(),
   completed_at  timestamptz,
-  cycle         int not null default 0
+  cycle         int not null default 0,
+  record_kind   text not null default 'task' check (record_kind in ('task','activity')),
+  stage         text check (stage in ('signal','touch','meeting','deal','won','deferred')),
+  start_at      timestamptz,
+  started_at    timestamptz,
+  actual_at     timestamptz,
+  channel       text default '',
+  owner_name    text default 'Я'
 );
 create index if not exists idx_task_company on company_task(company_id);
 create index if not exists idx_task_contact on company_task(contact_id);
@@ -160,7 +186,11 @@ create table if not exists board_task (
   hyp_task_id uuid references hyp_task(id) on delete set null,
   title text not null default 'Новая задача',
   status text not null default 'new' check (status in ('new','in_work','deferred','done')),
+  priority text not null default 'B' check (priority in ('A','B','C')),
+  start_at timestamptz,
   due_at timestamptz,
+  started_at timestamptz,
+  owner_name text default 'Я',
   created_at timestamptz not null default now(),
   completed_at timestamptz
 );
@@ -175,6 +205,7 @@ alter table kpi_target   enable row level security;
 alter table hypothesis   enable row level security;
 alter table hyp_task     enable row level security;
 alter table hyp_subtask  enable row level security;
+alter table rejection_reason enable row level security;
 alter table company      enable row level security;
 alter table contact      enable row level security;
 alter table company_task enable row level security;
@@ -184,7 +215,7 @@ alter table board_task enable row level security;
 do $$
 declare t text;
 begin
-  foreach t in array array['strategy','kpi_target','hypothesis','hyp_task','hyp_subtask','company','contact','company_task','board_task']
+  foreach t in array array['strategy','kpi_target','hypothesis','hyp_task','hyp_subtask','rejection_reason','company','contact','company_task','board_task']
   loop
     execute format('drop policy if exists "authenticated all" on %I;', t);
     execute format('create policy "authenticated all" on %I for all to authenticated using (true) with check (true);', t);

@@ -18,7 +18,7 @@ if (!existsSync(dbPath)) { console.error('Нет local/abm.db — сначала
 const db = new DatabaseSync(dbPath)
 db.exec('PRAGMA foreign_keys = ON;')
 
-const TABLES = new Set(['strategy','kpi_target','hypothesis','hyp_task','hyp_subtask','company','contact','company_task','board_task'])
+const TABLES = new Set(['strategy','kpi_target','hypothesis','hyp_task','hyp_subtask','rejection_reason','company','contact','company_task','board_task'])
 const COL = /^[a-z_]+$/
 const norm = v => v === undefined ? null : (v === true ? 1 : (v === false ? 0 : v))
 

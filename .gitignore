@@ -22,3 +22,8 @@ local/*.sqlite
 local/backups/
 local/design-preview.html
 local/seed-demo.mjs
+
+# локальные QA-артефакты и полный SQL-снимок production-данных
+design-qa.md
+design-qa-*.png
+supabase/stage-to-prod.sql

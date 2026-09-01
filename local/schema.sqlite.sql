@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS hypothesis (
   code        TEXT DEFAULT '',
   title       TEXT NOT NULL DEFAULT 'Гипотеза',
   smart       TEXT DEFAULT '',
-  status      TEXT NOT NULL DEFAULT 'idea' CHECK (status IN ('idea','in_work','validated','paused','rejected')),
+  status      TEXT NOT NULL DEFAULT 'idea' CHECK (status IN ('idea','in_work','validated','paused','rejected','archived')),
   priority    TEXT NOT NULL DEFAULT 'B' CHECK (priority IN ('A','B','C')),
   unit        TEXT DEFAULT 'Цель',
   plan        INTEGER NOT NULL DEFAULT 1,
@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS hyp_task (
   priority      TEXT NOT NULL DEFAULT 'B' CHECK (priority IN ('A','B','C')),
   mode          TEXT NOT NULL DEFAULT 'manual' CHECK (mode IN ('manual','tracked')),
   track         TEXT CHECK (track IN ('touch','meeting','agreement')),
+  aggregation_mode TEXT NOT NULL DEFAULT 'actions' CHECK (aggregation_mode IN ('actions','contacts','companies')),
   sort_order    INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_htask_hyp ON hyp_task(hypothesis_id);
@@ -70,6 +71,15 @@ CREATE TABLE IF NOT EXISTS hyp_subtask (
 CREATE INDEX IF NOT EXISTS idx_subtask_task ON hyp_subtask(hyp_task_id);
 
 -- ---------- КОМПАНИИ / КОНТАКТЫ ----------
+CREATE TABLE IF NOT EXISTS rejection_reason (
+  id             TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  active         INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
+  sort_order     INTEGER NOT NULL DEFAULT 0,
+  rejected_count INTEGER NOT NULL DEFAULT 0,
+  created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
 CREATE TABLE IF NOT EXISTS company (
   id                       TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)))||'-'||lower(hex(randomblob(2)))||'-4'||substr(lower(hex(randomblob(2))),2)||'-'||substr('89ab',abs(random())%4+1,1)||substr(lower(hex(randomblob(2))),2)||'-'||lower(hex(randomblob(6)))),
   ext_no                   TEXT,
@@ -91,6 +101,10 @@ CREATE TABLE IF NOT EXISTS company (
                              CHECK (funnel_stage IN ('new_signal','rejected','in_work','touched','met','agreement','revenue','excluded')),
   is_excluded              INTEGER NOT NULL DEFAULT 0 CHECK (is_excluded IN (0,1)),
   excluded_reason          TEXT DEFAULT '',
+  rejection_reason_id      TEXT REFERENCES rejection_reason(id) ON DELETE SET NULL,
+  rejection_comment        TEXT DEFAULT '',
+  rejected_at              TEXT,
+  purge_at                 TEXT,
   revenue_amount           REAL NOT NULL DEFAULT 0,
   created_at               TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   last_activity_at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
@@ -125,6 +139,11 @@ CREATE TABLE IF NOT EXISTS contact (
   status             TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','excluded')),
   excluded_reason    TEXT DEFAULT '',
   crm_stage          TEXT,
+  hypothesis_id      TEXT REFERENCES hypothesis(id) ON DELETE SET NULL,
+  hyp_task_id        TEXT REFERENCES hyp_task(id) ON DELETE SET NULL,
+  owner_name         TEXT DEFAULT 'Я',
+  max_stage          TEXT,
+  response_status    TEXT NOT NULL DEFAULT 'none' CHECK (response_status IN ('none','waiting','replied','ignored')),
   created_at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE INDEX IF NOT EXISTS idx_contact_company ON contact(company_id);
@@ -145,7 +164,14 @@ CREATE TABLE IF NOT EXISTS company_task (
   due_at        TEXT,
   created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   completed_at  TEXT,
-  cycle         INTEGER NOT NULL DEFAULT 0
+  cycle         INTEGER NOT NULL DEFAULT 0,
+  record_kind   TEXT NOT NULL DEFAULT 'task' CHECK (record_kind IN ('task','activity')),
+  stage         TEXT CHECK (stage IN ('signal','touch','meeting','deal','won','deferred')),
+  start_at      TEXT,
+  started_at    TEXT,
+  actual_at     TEXT,
+  channel       TEXT DEFAULT '',
+  owner_name    TEXT DEFAULT 'Я'
 );
 CREATE INDEX IF NOT EXISTS idx_task_company ON company_task(company_id);
 CREATE INDEX IF NOT EXISTS idx_task_contact ON company_task(contact_id);
@@ -160,7 +186,11 @@ CREATE TABLE IF NOT EXISTS board_task (
   hyp_task_id   TEXT REFERENCES hyp_task(id) ON DELETE SET NULL,
   title         TEXT NOT NULL DEFAULT 'Новая задача',
   status        TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','in_work','deferred','done')),
+  priority      TEXT NOT NULL DEFAULT 'B' CHECK (priority IN ('A','B','C')),
+  start_at      TEXT,
   due_at        TEXT,
+  started_at    TEXT,
+  owner_name    TEXT DEFAULT 'Я',
   created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   completed_at  TEXT
 );
